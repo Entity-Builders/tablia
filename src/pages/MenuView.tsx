@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import type { MenuCategory, MenuItem } from '../types';
+import { MenuChat } from '../components/MenuChat';
 import './MenuView.css';
 
 interface MenuData {
@@ -201,25 +202,13 @@ export function MenuView() {
         <MessageCircle size={24} />
       </button>
 
-      {/* Chat panel placeholder */}
+      {/* Chat panel */}
       {chatOpen && (
-        <div className='menu-view__chat-panel'>
-          <div className='menu-view__chat-header'>
-            <h3>Preguntale al menú</h3>
-            <button onClick={() => setChatOpen(false)}>✕</button>
-          </div>
-          <div className='menu-view__chat-body'>
-            <p className='menu-view__chat-welcome'>
-              ¡Hola! Soy el asistente de <strong>{menuData.venue.name}</strong>.
-              Preguntame lo que quieras: alergenos, recomendaciones,
-              porciones...
-            </p>
-          </div>
-          <div className='menu-view__chat-input'>
-            <input type='text' placeholder='Ej: ¿Qué tienen sin gluten?' />
-            <button>Enviar</button>
-          </div>
-        </div>
+        <MenuChat
+          venueName={menuData.venue.name}
+          categories={menuData.categories}
+          onClose={() => setChatOpen(false)}
+        />
       )}
     </div>
   );
