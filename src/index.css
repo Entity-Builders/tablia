@@ -1,0 +1,126 @@
+/* ─── Tablia Design System ────────────────────────────────────── */
+
+:root {
+  /* Brand Colors — warm, gastronomic palette */
+  --accent: hsl(25, 95%, 55%);
+  --accent-light: hsl(25, 95%, 65%);
+  --accent-dark: hsl(25, 95%, 45%);
+  --accent-rgb: 240, 115, 30;
+
+  /* Backgrounds */
+  --bg-primary: #fafaf8;
+  --bg-secondary: #f3f1ed;
+  --bg-card: #ffffff;
+  --bg-hover: #f5f3ef;
+
+  /* Text */
+  --text-primary: #1a1a18;
+  --text-secondary: #6b6960;
+  --text-muted: #9e9a90;
+
+  /* Borders */
+  --border: #e8e5df;
+  --border-strong: #d1cdc4;
+
+  /* Status */
+  --success: hsl(145, 65%, 42%);
+  --warning: hsl(40, 95%, 55%);
+  --error: hsl(0, 75%, 55%);
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.08);
+
+  /* Radii */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+}
+
+/* ─── Reset & Base ────────────────────────────────────────────── */
+
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family:
+    'Inter',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+button {
+  font-family: inherit;
+}
+
+/* ─── Utility: Loading ────────────────────────────────────────── */
+
+.loading-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-primary);
+}
+
+.loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ─── Scrollbar ───────────────────────────────────────────────── */
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
