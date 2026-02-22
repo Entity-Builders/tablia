@@ -1,45 +1,196 @@
 import { useParams } from 'react-router-dom';
-import { UtensilsCrossed, MessageCircle } from 'lucide-react';
-import { useState } from 'react';
+import {
+  UtensilsCrossed,
+  MessageCircle,
+  ChevronDown,
+  ChevronUp,
+  Tag,
+} from 'lucide-react';
+import { useState, useEffect } from 'react';
+import type { MenuCategory, MenuItem } from '../types';
 import './MenuView.css';
+
+interface MenuData {
+  venue: {
+    name: string;
+    slug: string;
+    cuisine_type: string | null;
+    logo_url: string | null;
+  };
+  categories: (MenuCategory & { items: MenuItem[] })[];
+}
 
 /**
  * MenuView — Public page that comensales see when scanning a QR.
  * Route: /m/:slug
- *
- * This is the heart of Tablia: the enhanced menu experience.
- * TODO: Fetch real menu data from Supabase by slug
- * TODO: Implement AI chat sidebar
- * TODO: Track analytics events
  */
 export function MenuView() {
   const { slug } = useParams();
   const [chatOpen, setChatOpen] = useState(false);
+  const [menuData, setMenuData] = useState<MenuData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [expandedCats, setExpandedCats] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (!slug) return;
+
+    const load = async () => {
+      try {
+        const { getPublishedMenu } = await import('../services/menu-service');
+        const data = await getPublishedMenu(slug);
+        setMenuData(data);
+        // Expand all categories by default
+        if (data) {
+          setExpandedCats(new Set(data.categories.map((c) => c.id)));
+        }
+      } catch {
+        // Silently fail — will show "not found" state
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    load();
+  }, [slug]);
+
+  const toggleCategory = (catId: string) => {
+    setExpandedCats((prev) => {
+      const next = new Set(prev);
+      if (next.has(catId)) {
+        next.delete(catId);
+      } else {
+        next.add(catId);
+      }
+      return next;
+    });
+  };
+
+  const formatPrice = (price: number, currency: string) => {
+    if (price === 0) return '';
+    const symbol = currency === 'USD' ? 'US$' : currency === 'EUR' ? '€' : '$';
+    return `${symbol}${price.toLocaleString('es-AR')}`;
+  };
+
+  // ─── Loading ──────────────────────────────────────────────────
+
+  if (loading) {
+    return (
+      <div className='menu-view'>
+        <div className='menu-view__loading'>
+          <div className='loading-spinner' />
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Not Found ────────────────────────────────────────────────
+
+  if (!menuData) {
+    return (
+      <div className='menu-view'>
+        <header className='menu-view__header'>
+          <div className='menu-view__brand'>
+            <UtensilsCrossed size={20} />
+            <span>Tablia</span>
+          </div>
+        </header>
+        <main className='menu-view__content'>
+          <div className='menu-view__placeholder'>
+            <UtensilsCrossed size={48} />
+            <h1>Menú no encontrado</h1>
+            <p>
+              No hay un menú publicado para <strong>{slug}</strong>.
+            </p>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // ─── Menu ─────────────────────────────────────────────────────
 
   return (
     <div className='menu-view'>
       {/* Header */}
       <header className='menu-view__header'>
+        <div className='menu-view__venue-info'>
+          <h1 className='menu-view__venue-name'>{menuData.venue.name}</h1>
+          {menuData.venue.cuisine_type && (
+            <span className='menu-view__cuisine'>
+              {menuData.venue.cuisine_type}
+            </span>
+          )}
+        </div>
         <div className='menu-view__brand'>
-          <UtensilsCrossed size={20} />
+          <UtensilsCrossed size={14} />
           <span>Tablia</span>
         </div>
       </header>
 
-      {/* Menu content placeholder */}
+      {/* Menu Content */}
       <main className='menu-view__content'>
-        <div className='menu-view__placeholder'>
-          <UtensilsCrossed size={48} />
-          <h1>Menú</h1>
-          <p>
-            Cargando menú para <strong>{slug}</strong>...
-          </p>
-          <p className='menu-view__hint'>
-            Este es el placeholder del menú público. Se reemplazará con el
-            contenido real cuando se implemente el adapter.
-          </p>
-        </div>
+        {menuData.categories.map((cat) => (
+          <section key={cat.id} className='menu-view__section'>
+            <button
+              className='menu-view__section-header'
+              onClick={() => toggleCategory(cat.id)}
+            >
+              <h2>{cat.name}</h2>
+              <span className='menu-view__section-count'>
+                {cat.items.length}
+              </span>
+              {expandedCats.has(cat.id) ? (
+                <ChevronUp size={18} />
+              ) : (
+                <ChevronDown size={18} />
+              )}
+            </button>
+
+            {expandedCats.has(cat.id) && (
+              <div className='menu-view__items'>
+                {cat.items.map((item) => (
+                  <div key={item.id} className='menu-view__item'>
+                    <div className='menu-view__item-info'>
+                      <h3 className='menu-view__item-name'>{item.name}</h3>
+                      {item.description && (
+                        <p className='menu-view__item-desc'>
+                          {item.description}
+                        </p>
+                      )}
+                      {item.tags.length > 0 && (
+                        <div className='menu-view__item-tags'>
+                          {item.tags.map((tag) => (
+                            <span key={tag} className='menu-view__item-tag'>
+                              <Tag size={10} /> {tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    {item.price > 0 && (
+                      <span className='menu-view__item-price'>
+                        {formatPrice(item.price, item.currency)}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        ))}
+
+        {menuData.categories.length === 0 && (
+          <div className='menu-view__placeholder'>
+            <p>Este menú no tiene platos cargados todavía.</p>
+          </div>
+        )}
       </main>
+
+      {/* Powered by */}
+      <footer className='menu-view__footer'>
+        <UtensilsCrossed size={12} />
+        <span>Potenciado por Tablia</span>
+      </footer>
 
       {/* Chat FAB */}
       <button
@@ -59,8 +210,9 @@ export function MenuView() {
           </div>
           <div className='menu-view__chat-body'>
             <p className='menu-view__chat-welcome'>
-              ¡Hola! Soy el asistente del menú. Preguntame lo que quieras:
-              alergenos, recomendaciones, porciones...
+              ¡Hola! Soy el asistente de <strong>{menuData.venue.name}</strong>.
+              Preguntame lo que quieras: alergenos, recomendaciones,
+              porciones...
             </p>
           </div>
           <div className='menu-view__chat-input'>

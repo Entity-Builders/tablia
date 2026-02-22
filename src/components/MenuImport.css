@@ -1,0 +1,228 @@
+.menu-import {
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+/* ─── Header ──────────────────────────────────────────────────── */
+
+.menu-import__header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.menu-import__header h2 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.35rem;
+  font-weight: 600;
+}
+
+.menu-import__back {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0.4rem;
+  border-radius: 8px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+}
+
+.menu-import__back:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+/* ─── Body ────────────────────────────────────────────────────── */
+
+.menu-import__body {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: 2rem;
+}
+
+.menu-import__body--center {
+  text-align: center;
+  padding: 3rem 2rem;
+}
+
+.menu-import__body--center h3 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.menu-import__icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 1.25rem;
+  border-radius: 16px;
+  background: linear-gradient(
+    135deg,
+    rgba(var(--accent-rgb), 0.1),
+    rgba(var(--accent-rgb), 0.05)
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+}
+
+.menu-import__hint {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin-bottom: 1.5rem;
+  max-width: 480px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* ─── Textarea ────────────────────────────────────────────────── */
+
+.menu-import__textarea {
+  width: 100%;
+  padding: 1rem;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  resize: vertical;
+  min-height: 200px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.menu-import__textarea::placeholder {
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+.menu-import__textarea:focus {
+  border-color: var(--accent);
+}
+
+/* ─── Submit ──────────────────────────────────────────────────── */
+
+.menu-import__submit {
+  display: block;
+  width: 100%;
+  margin-top: 1.25rem;
+  padding: 0.875rem;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.menu-import__submit:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.menu-import__submit:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ─── Error ───────────────────────────────────────────────────── */
+
+.menu-import__error {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: hsl(0, 80%, 97%);
+  border: 1px solid hsl(0, 75%, 85%);
+  border-radius: var(--radius-sm);
+  color: var(--error);
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+/* ─── Spinner ─────────────────────────────────────────────────── */
+
+.menu-import__spinner {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 1.25rem;
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.menu-import__spin {
+  animation: spin 1s linear infinite;
+}
+
+/* ─── Success ─────────────────────────────────────────────────── */
+
+.menu-import__success-icon {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 1rem;
+  border-radius: 50%;
+  background: hsl(145, 65%, 95%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--success);
+}
+
+.menu-import__link-box {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  justify-content: center;
+  padding: 0.75rem 1.25rem;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+  color: var(--accent);
+}
+
+.menu-import__link-box a {
+  color: var(--accent);
+  font-weight: 600;
+  word-break: break-all;
+}
+
+/* ─── Meta (confidence, cuisine) ──────────────────────────────── */
+
+.menu-import__meta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+}
+
+.menu-import__tag {
+  display: inline-flex;
+  padding: 0.25rem 0.75rem;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.menu-import__confidence {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}

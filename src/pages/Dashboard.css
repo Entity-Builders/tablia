@@ -62,9 +62,15 @@
   padding: 2rem;
 }
 
+.dashboard__loading {
+  display: flex;
+  justify-content: center;
+  padding: 4rem;
+}
+
 .dashboard__title-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   margin-bottom: 2rem;
 }
@@ -73,6 +79,13 @@
   font-family: 'Outfit', sans-serif;
   font-size: 1.75rem;
   font-weight: 700;
+}
+
+.dashboard__venue-slug {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 0.15rem;
+  display: block;
 }
 
 .dashboard__add-btn {
@@ -88,16 +101,91 @@
   font-size: 0.9rem;
   cursor: pointer;
   transition: all 0.2s;
+  flex-shrink: 0;
 }
 
-.dashboard__add-btn:hover {
+.dashboard__add-btn:hover:not(:disabled) {
   opacity: 0.9;
   transform: translateY(-1px);
+}
+
+.dashboard__add-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .dashboard__add-btn--large {
   padding: 0.875rem 2rem;
   font-size: 1rem;
+}
+
+/* ─── Create Venue ────────────────────────────────────────────── */
+
+.dashboard__create-venue {
+  text-align: center;
+  padding: 3rem 2rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  max-width: 500px;
+  margin: 2rem auto;
+}
+
+.dashboard__create-venue h2 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.35rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.dashboard__create-venue p {
+  color: var(--text-secondary);
+  margin-bottom: 1.5rem;
+  font-size: 0.95rem;
+}
+
+.dashboard__venue-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.dashboard__venue-input {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+  font-family: inherit;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.dashboard__venue-input:focus {
+  border-color: var(--accent);
+}
+
+.dashboard__slug-preview {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-align: left;
+  padding: 0 0.25rem;
+}
+
+.dashboard__slug-preview strong {
+  color: var(--accent);
+}
+
+.dashboard__venue-error {
+  padding: 0.6rem 0.75rem;
+  background: hsl(0, 80%, 97%);
+  border: 1px solid hsl(0, 75%, 85%);
+  border-radius: var(--radius-sm);
+  color: var(--error);
+  font-size: 0.85rem;
+  text-align: left;
 }
 
 /* ─── Empty State ─────────────────────────────────────────────── */
@@ -107,7 +195,7 @@
   padding: 4rem 2rem;
   background: var(--bg-card);
   border: 2px dashed var(--border);
-  border-radius: 20px;
+  border-radius: var(--radius-xl);
 }
 
 .dashboard__empty-icon {
@@ -151,16 +239,14 @@
 .dashboard__menu-card {
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   padding: 1.5rem;
-  cursor: pointer;
   transition: all 0.2s;
 }
 
 .dashboard__menu-card:hover {
   border-color: var(--accent);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--shadow-md);
 }
 
 .dashboard__menu-card h3 {
@@ -169,7 +255,7 @@
   margin-bottom: 0.25rem;
 }
 
-.dashboard__menu-card p {
+.dashboard__menu-card > p {
   font-size: 0.85rem;
   color: var(--text-secondary);
   margin-bottom: 1rem;
@@ -177,13 +263,47 @@
 
 .dashboard__menu-stats {
   display: flex;
+  align-items: center;
   gap: 1rem;
   font-size: 0.8rem;
+}
+
+.dashboard__status {
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 0.75rem;
+}
+
+.dashboard__status--published {
+  background: hsl(145, 65%, 93%);
+  color: var(--success);
+}
+
+.dashboard__status--review {
+  background: hsl(40, 95%, 92%);
+  color: hsl(40, 95%, 40%);
+}
+
+.dashboard__status--parsing {
+  background: hsl(210, 80%, 93%);
+  color: hsl(210, 80%, 45%);
+}
+
+.dashboard__status--draft {
+  background: var(--bg-secondary);
   color: var(--text-muted);
 }
 
-.dashboard__menu-stats span {
+.dashboard__view-link {
   display: flex;
   align-items: center;
   gap: 0.3rem;
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.dashboard__view-link:hover {
+  text-decoration: underline;
 }
