@@ -1,6 +1,19 @@
 import { supabase } from '../lib/supabase';
-import { parseMenuFromText } from './menu-parser-service';
-import type { Menu, MenuCategory, MenuItem, ParsedMenu } from '../types';
+import { parseMenuFromText, parseMenuFromFile } from './menu-parser-service';
+import type {
+  Menu,
+  MenuCategory,
+  MenuItem,
+  MenuSourceType,
+  ParsedMenu,
+} from '../types';
+
+/** Derive source_type from MIME. */
+function mimeToSourceType(mime: string): MenuSourceType {
+  if (mime === 'application/pdf') return 'pdf';
+  if (mime.startsWith('image/')) return 'image';
+  return 'text';
+}
 
 /**
  * Create a new menu from pasted text. Calls AI parser and stores the result.
@@ -42,6 +55,76 @@ export async function createMenuFromText(
   try {
     // 2. Parse with AI
     const parsed = await parseMenuFromText(text);
+
+    // 3. Update menu with parsed result, set status to 'review'
+    const { data: updatedMenu, error: updateError } = await supabase
+      .from('tablia_menus')
+      .update({
+        parsed_json: parsed as unknown as Record<string, unknown>,
+        status: 'review',
+        name: parsed.metadata?.restaurant_name || menu.name,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', menu.id)
+      .select()
+      .single();
+
+    if (updateError) throw new Error(updateError.message);
+
+    return { menu: updatedMenu as Menu, parsed };
+  } catch (error) {
+    // If parsing fails, set status back to draft
+    await supabase
+      .from('tablia_menus')
+      .update({ status: 'draft' })
+      .eq('id', menu.id);
+
+    throw error;
+  }
+}
+
+/**
+ * Create a new menu from a PDF or image file. Calls AI multimodal parser.
+ * Returns the menu with parsed_json populated (status: 'review').
+ */
+export async function createMenuFromFile(
+  venueId: string,
+  file: File,
+  name?: string,
+): Promise<{ menu: Menu; parsed: ParsedMenu }> {
+  // 0. Guard: only 1 menu per venue
+  const { count, error: countError } = await supabase
+    .from('tablia_menus')
+    .select('id', { count: 'exact', head: true })
+    .eq('venue_id', venueId);
+
+  if (countError) throw new Error(countError.message);
+  if ((count ?? 0) > 0) {
+    throw new Error(
+      'Este establecimiento ya tiene un menú. Eliminá el existente antes de crear uno nuevo.',
+    );
+  }
+
+  const sourceType = mimeToSourceType(file.type);
+
+  // 1. Create menu record in 'parsing' state
+  const { data: menu, error: menuError } = await supabase
+    .from('tablia_menus')
+    .insert({
+      venue_id: venueId,
+      name: name || 'Menú Principal',
+      source_type: sourceType,
+      source_content: file.name,
+      status: 'parsing',
+    })
+    .select()
+    .single();
+
+  if (menuError) throw new Error(menuError.message);
+
+  try {
+    // 2. Parse with AI (multimodal)
+    const parsed = await parseMenuFromFile(file);
 
     // 3. Update menu with parsed result, set status to 'review'
     const { data: updatedMenu, error: updateError } = await supabase

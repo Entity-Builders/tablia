@@ -76,6 +76,34 @@ Output:
 
 const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY || '');
 
+/** MIME types Gemini accepts as inlineData for menu parsing. */
+export const SUPPORTED_FILE_TYPES: Record<string, string> = {
+  'application/pdf': 'PDF',
+  'image/jpeg': 'Imagen JPG',
+  'image/png': 'Imagen PNG',
+  'image/webp': 'Imagen WebP',
+};
+
+/** Max file size in bytes (10 MB). */
+export const MAX_FILE_SIZE = 10 * 1024 * 1024;
+
+/** Clean Gemini response and parse as ParsedMenu JSON. */
+function parseGeminiResponse(raw: string): ParsedMenu {
+  const cleanJson = raw
+    .replace(/```json\n?/g, '')
+    .replace(/```\n?/g, '')
+    .trim();
+
+  try {
+    return JSON.parse(cleanJson) as ParsedMenu;
+  } catch (error) {
+    console.error('Failed to parse Gemini response:', cleanJson);
+    throw new Error(
+      'No se pudo interpretar el menú. Intentá de nuevo o verificá el formato.',
+    );
+  }
+}
+
 /**
  * Parse raw menu text into structured categories + items using Gemini AI.
  */
@@ -89,21 +117,49 @@ export async function parseMenuFromText(text: string): Promise<ParsedMenu> {
     },
   ]);
 
-  const response = result.response.text();
+  return parseGeminiResponse(result.response.text());
+}
 
-  // Clean potential markdown wrapping
-  const cleanJson = response
-    .replace(/```json\n?/g, '')
-    .replace(/```\n?/g, '')
-    .trim();
+/**
+ * Parse a menu file (PDF or image) into structured data using Gemini multimodal.
+ */
+export async function parseMenuFromFile(file: File): Promise<ParsedMenu> {
+  // Validate MIME type
+  if (!SUPPORTED_FILE_TYPES[file.type]) {
+    const supported = Object.values(SUPPORTED_FILE_TYPES).join(', ');
+    throw new Error(`Formato no soportado. Formatos válidos: ${supported}`);
+  }
 
-  try {
-    const parsed: ParsedMenu = JSON.parse(cleanJson);
-    return parsed;
-  } catch (error) {
-    console.error('Failed to parse Gemini response:', cleanJson);
+  // Validate size
+  if (file.size > MAX_FILE_SIZE) {
     throw new Error(
-      'No se pudo interpretar el menú. Intentá de nuevo o verificá el formato.',
+      `El archivo es demasiado grande (máx ${MAX_FILE_SIZE / 1024 / 1024} MB).`,
     );
   }
+
+  // Read file as base64
+  const arrayBuffer = await file.arrayBuffer();
+  const base64 = btoa(
+    new Uint8Array(arrayBuffer).reduce(
+      (data, byte) => data + String.fromCharCode(byte),
+      '',
+    ),
+  );
+
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+
+  const result = await model.generateContent([
+    { text: SYSTEM_PROMPT },
+    {
+      text: 'Analiza el siguiente menú (archivo adjunto) y devuelve JSON estructurado:',
+    },
+    {
+      inlineData: {
+        mimeType: file.type,
+        data: base64,
+      },
+    },
+  ]);
+
+  return parseGeminiResponse(result.response.text());
 }

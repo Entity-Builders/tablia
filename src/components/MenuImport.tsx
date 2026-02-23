@@ -1,17 +1,25 @@
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import type { ParsedMenu } from '../types';
 import { MenuReview } from './MenuReview';
 import {
+  SUPPORTED_FILE_TYPES,
+  MAX_FILE_SIZE,
+} from '../services/menu-parser-service';
+import {
   FileText,
+  Upload,
   Loader2,
   CheckCircle2,
   AlertCircle,
   ArrowLeft,
   QrCode,
+  X,
+  File as FileIcon,
 } from 'lucide-react';
 import './MenuImport.css';
 
 type ImportStep = 'input' | 'parsing' | 'review' | 'done';
+type InputMode = 'file' | 'text';
 
 interface MenuImportProps {
   venueId: string;
@@ -20,6 +28,15 @@ interface MenuImportProps {
   onCancel: () => void;
 }
 
+/** Human-readable file size. */
+function formatSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+const ACCEPT_STRING = Object.keys(SUPPORTED_FILE_TYPES).join(',');
+
 export function MenuImport({
   venueId,
   venueSlug,
@@ -27,24 +44,94 @@ export function MenuImport({
   onCancel,
 }: MenuImportProps) {
   const [step, setStep] = useState<ImportStep>('input');
+  const [inputMode, setInputMode] = useState<InputMode>('file');
   const [menuText, setMenuText] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [menuId, setMenuId] = useState<string | null>(null);
   const [parsedMenu, setParsedMenu] = useState<ParsedMenu | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // ─── File validation ────────────────────────────────────────────
+
+  const validateAndSetFile = useCallback((file: File) => {
+    setError(null);
+
+    if (!SUPPORTED_FILE_TYPES[file.type]) {
+      const supported = Object.values(SUPPORTED_FILE_TYPES).join(', ');
+      setError(`Formato no soportado. Formatos válidos: ${supported}`);
+      return;
+    }
+
+    if (file.size > MAX_FILE_SIZE) {
+      setError(
+        `El archivo es demasiado grande (máx ${MAX_FILE_SIZE / 1024 / 1024} MB).`,
+      );
+      return;
+    }
+
+    setSelectedFile(file);
+  }, []);
+
+  // ─── Drag & Drop handlers ──────────────────────────────────────
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  }, []);
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      setIsDragOver(false);
+      const file = e.dataTransfer.files[0];
+      if (file) validateAndSetFile(file);
+    },
+    [validateAndSetFile],
+  );
+
+  const handleFileSelect = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) validateAndSetFile(file);
+    },
+    [validateAndSetFile],
+  );
+
+  // ─── Parse handlers ────────────────────────────────────────────
+
+  const canSubmit =
+    inputMode === 'text' ? menuText.trim().length > 0 : selectedFile !== null;
 
   const handleParse = async () => {
-    if (!menuText.trim()) return;
+    if (!canSubmit) return;
     setError(null);
     setStep('parsing');
 
     try {
-      const { createMenuFromText } = await import('../services/menu-service');
-      const { menu, parsed } = await createMenuFromText(
-        venueId,
-        menuText.trim(),
-      );
-      setMenuId(menu.id);
-      setParsedMenu(parsed);
+      if (inputMode === 'text') {
+        const { createMenuFromText } = await import('../services/menu-service');
+        const { menu, parsed } = await createMenuFromText(
+          venueId,
+          menuText.trim(),
+        );
+        setMenuId(menu.id);
+        setParsedMenu(parsed);
+      } else if (selectedFile) {
+        const { createMenuFromFile } = await import('../services/menu-service');
+        const { menu, parsed } = await createMenuFromFile(
+          venueId,
+          selectedFile,
+        );
+        setMenuId(menu.id);
+        setParsedMenu(parsed);
+      }
       setStep('review');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al parsear el menú');
@@ -78,21 +165,99 @@ export function MenuImport({
         </div>
 
         <div className='menu-import__body'>
-          <div className='menu-import__icon'>
-            <FileText size={40} />
+          {/* ─── Tab switcher ─── */}
+          <div className='menu-import__tabs'>
+            <button
+              className={`menu-import__tab ${inputMode === 'file' ? 'menu-import__tab--active' : ''}`}
+              onClick={() => setInputMode('file')}
+            >
+              <Upload size={16} />
+              Archivo
+            </button>
+            <button
+              className={`menu-import__tab ${inputMode === 'text' ? 'menu-import__tab--active' : ''}`}
+              onClick={() => setInputMode('text')}
+            >
+              <FileText size={16} />
+              Texto
+            </button>
           </div>
-          <p className='menu-import__hint'>
-            Pegá el texto de tu menú. Puede ser un copy-paste de WhatsApp, una
-            lista de platos con precios, o el contenido de tu menú actual.
-          </p>
 
-          <textarea
-            className='menu-import__textarea'
-            placeholder={`Ejemplo:\n\nENTRADAS\nEmpanadas de carne (x3) $2500\nProvoleta con orégano $3200\n\nPLATOS PRINCIPALES\nBife de chorizo con papas $8500\nMilanesa napolitana con fritas $7200\n\nBEBIDAS\nCoca-Cola $1500\nCerveza artesanal IPA $3000`}
-            value={menuText}
-            onChange={(e) => setMenuText(e.target.value)}
-            rows={14}
-          />
+          {/* ─── File mode ─── */}
+          {inputMode === 'file' && (
+            <>
+              <p className='menu-import__hint'>
+                Subí un PDF o foto de tu menú. Tablia lo analiza automáticamente
+                con inteligencia artificial.
+              </p>
+
+              {!selectedFile ? (
+                <div
+                  className={`menu-import__dropzone ${isDragOver ? 'menu-import__dropzone--active' : ''}`}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Upload size={32} className='menu-import__dropzone-icon' />
+                  <span className='menu-import__dropzone-text'>
+                    Arrastrá un archivo o hacé clic para buscar
+                  </span>
+                  <span className='menu-import__dropzone-formats'>
+                    PDF, JPG, PNG o WebP · máx 10 MB
+                  </span>
+                  <input
+                    ref={fileInputRef}
+                    type='file'
+                    accept={ACCEPT_STRING}
+                    onChange={handleFileSelect}
+                    className='menu-import__file-input'
+                  />
+                </div>
+              ) : (
+                <div className='menu-import__file-preview'>
+                  <FileIcon size={20} />
+                  <div className='menu-import__file-info'>
+                    <span className='menu-import__file-name'>
+                      {selectedFile.name}
+                    </span>
+                    <span className='menu-import__file-size'>
+                      {formatSize(selectedFile.size)}
+                    </span>
+                  </div>
+                  <button
+                    className='menu-import__file-remove'
+                    onClick={() => {
+                      setSelectedFile(null);
+                      if (fileInputRef.current) fileInputRef.current.value = '';
+                    }}
+                    title='Quitar archivo'
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* ─── Text mode ─── */}
+          {inputMode === 'text' && (
+            <>
+              <p className='menu-import__hint'>
+                Pegá el texto de tu menú. Puede ser un copy-paste de WhatsApp,
+                una lista de platos con precios, o el contenido de tu menú
+                actual.
+              </p>
+
+              <textarea
+                className='menu-import__textarea'
+                placeholder={`Ejemplo:\n\nENTRADAS\nEmpanadas de carne (x3) $2500\nProvoleta con orégano $3200\n\nPLATOS PRINCIPALES\nBife de chorizo con papas $8500\nMilanesa napolitana con fritas $7200\n\nBEBIDAS\nCoca-Cola $1500\nCerveza artesanal IPA $3000`}
+                value={menuText}
+                onChange={(e) => setMenuText(e.target.value)}
+                rows={14}
+              />
+            </>
+          )}
 
           {error && (
             <div className='menu-import__error'>
@@ -104,7 +269,7 @@ export function MenuImport({
           <button
             className='menu-import__submit'
             onClick={handleParse}
-            disabled={!menuText.trim()}
+            disabled={!canSubmit}
           >
             Analizar con IA
           </button>
