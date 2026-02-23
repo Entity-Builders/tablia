@@ -89,15 +89,26 @@ export const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 /** Clean Gemini response and parse as ParsedMenu JSON. */
 function parseGeminiResponse(raw: string): ParsedMenu {
-  const cleanJson = raw
+  // Strategy 1: Strip markdown fences and try parsing
+  let cleaned = raw
     .replace(/```json\n?/g, '')
     .replace(/```\n?/g, '')
     .trim();
 
   try {
-    return JSON.parse(cleanJson) as ParsedMenu;
-  } catch (error) {
-    console.error('Failed to parse Gemini response:', cleanJson);
+    return JSON.parse(cleaned) as ParsedMenu;
+  } catch {
+    // Strategy 2: Extract the first JSON object {...} from the response
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      try {
+        return JSON.parse(jsonMatch[0]) as ParsedMenu;
+      } catch {
+        // fall through
+      }
+    }
+
+    console.error('Failed to parse Gemini response:', raw.substring(0, 500));
     throw new Error(
       'No se pudo interpretar el menú. Intentá de nuevo o verificá el formato.',
     );
@@ -108,7 +119,10 @@ function parseGeminiResponse(raw: string): ParsedMenu {
  * Parse raw menu text into structured categories + items using Gemini AI.
  */
 export async function parseMenuFromText(text: string): Promise<ParsedMenu> {
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+  const model = genAI.getGenerativeModel({
+    model: 'gemini-2.0-flash',
+    generationConfig: { responseMimeType: 'application/json' },
+  });
 
   const result = await model.generateContent([
     { text: SYSTEM_PROMPT },
@@ -146,7 +160,10 @@ export async function parseMenuFromFile(file: File): Promise<ParsedMenu> {
     ),
   );
 
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+  const model = genAI.getGenerativeModel({
+    model: 'gemini-2.0-flash',
+    generationConfig: { responseMimeType: 'application/json' },
+  });
 
   const result = await model.generateContent([
     { text: SYSTEM_PROMPT },
