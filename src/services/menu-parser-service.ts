@@ -121,7 +121,10 @@ function parseGeminiResponse(raw: string): ParsedMenu {
 export async function parseMenuFromText(text: string): Promise<ParsedMenu> {
   const model = genAI.getGenerativeModel({
     model: 'gemini-2.0-flash',
-    generationConfig: { responseMimeType: 'application/json' },
+    generationConfig: {
+      responseMimeType: 'application/json',
+      maxOutputTokens: 8192,
+    },
   });
 
   const result = await model.generateContent([
@@ -162,7 +165,10 @@ export async function parseMenuFromFile(file: File): Promise<ParsedMenu> {
 
   const model = genAI.getGenerativeModel({
     model: 'gemini-2.0-flash',
-    generationConfig: { responseMimeType: 'application/json' },
+    generationConfig: {
+      responseMimeType: 'application/json',
+      maxOutputTokens: 8192,
+    },
   });
 
   const result = await model.generateContent([
