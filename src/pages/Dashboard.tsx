@@ -14,9 +14,82 @@ import {
   Store,
   ArrowLeft,
   Loader2,
+  TrendingUp,
+  Users,
+  MessageCircle,
+  Copy,
+  ExternalLink,
+  ChevronRight,
 } from 'lucide-react';
 import type { Venue, Menu, ParsedMenu } from '../types';
 import './Dashboard.css';
+
+// ─── Mock Analytics Data ────────────────────────────────────────
+
+const MOCK_STATS = {
+  scansToday: 47,
+  scansWeek: 312,
+  scansTotal: 1842,
+  todayTrend: +12, // percent vs yesterday
+  weekTrend: +8,
+};
+
+const MOCK_DAILY_SCANS = [
+  { day: 'Lun', value: 32 },
+  { day: 'Mar', value: 28 },
+  { day: 'Mié', value: 45 },
+  { day: 'Jue', value: 38 },
+  { day: 'Vie', value: 62 },
+  { day: 'Sáb', value: 78 },
+  { day: 'Dom', value: 47 },
+];
+
+const MOCK_TOP_ITEMS = [
+  {
+    name: 'Hamburguesa Clásica',
+    category: 'Principales',
+    views: 520,
+    price: 8500,
+  },
+  { name: 'Gin Tonic de Autor', category: 'Bebidas', views: 450, price: 6200 },
+  { name: 'Ravioles de Calabaza', category: 'Pastas', views: 380, price: 7800 },
+  { name: 'Tiramisú Casero', category: 'Postres', views: 310, price: 4500 },
+  { name: 'Ensalada César', category: 'Entradas', views: 250, price: 5200 },
+];
+
+const MOCK_CONVERSATIONS = [
+  { question: '¿Tienen opciones sin TACC?', count: 125 },
+  { question: '¿Cuál es el horario de atención?', count: 98 },
+  { question: '¿Aceptan reservas para grupos grandes?', count: 76 },
+  { question: '¿Tienen menú infantil?', count: 54 },
+];
+
+// ─── Mini Bar Chart Component ───────────────────────────────────
+
+function MiniBarChart({ data }: { data: { day: string; value: number }[] }) {
+  const max = Math.max(...data.map((d) => d.value));
+  return (
+    <div className='dash-chart'>
+      <div className='dash-chart__bars'>
+        {data.map((d, i) => (
+          <div key={i} className='dash-chart__col'>
+            <div className='dash-chart__bar-wrap'>
+              <div
+                className='dash-chart__bar'
+                style={{ height: `${(d.value / max) * 100}%` }}
+              >
+                <span className='dash-chart__tooltip'>{d.value}</span>
+              </div>
+            </div>
+            <span className='dash-chart__label'>{d.day}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Dashboard Views ────────────────────────────────────────────
 
 type DashboardView =
   | 'loading'
@@ -42,6 +115,10 @@ export function Dashboard() {
   );
   const [editLoading, setEditLoading] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
+  const [linkCopied, setLinkCopied] = useState(false);
+
+  const publishedMenu = menus.find((m) => m.status === 'published');
+  const menuUrl = venue ? `${window.location.origin}/m/${venue.slug}` : '';
 
   const loadVenues = useCallback(async () => {
     try {
@@ -49,7 +126,6 @@ export function Dashboard() {
       const venues = await getMyVenues();
       if (venues.length > 0) {
         setVenue(venues[0]);
-        // Load menus for this venue
         const { getMenusByVenue } = await import('../services/menu-service');
         const venueMenus = await getMenusByVenue(venues[0].id);
         setMenus(venueMenus);
@@ -163,7 +239,12 @@ export function Dashboard() {
     }
   };
 
-  // Auto-generate slug from name
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(menuUrl);
+    setLinkCopied(true);
+    setTimeout(() => setLinkCopied(false), 2000);
+  };
+
   const handleNameChange = (name: string) => {
     setVenueName(name);
     setVenueSlug(
@@ -173,6 +254,8 @@ export function Dashboard() {
         .replace(/^-|-$/g, ''),
     );
   };
+
+  // ─── Render ─────────────────────────────────────────────────────
 
   return (
     <div className='dashboard'>
@@ -190,7 +273,6 @@ export function Dashboard() {
         </div>
       </header>
 
-      {/* Content */}
       <main className='dashboard__main'>
         {/* Loading */}
         {view === 'loading' && (
@@ -234,28 +316,206 @@ export function Dashboard() {
           </div>
         )}
 
-        {/* Venue Dashboard */}
+        {/* ═══ VENUE DASHBOARD ═══════════════════════════════════ */}
         {view === 'venue' && venue && (
           <>
-            <div className='dashboard__title-row'>
-              <div>
-                <h1>{venue.name}</h1>
-                <span className='dashboard__venue-slug'>
-                  tablia.io/m/{venue.slug}
-                </span>
+            {/* ─── Hero: Venue + Menu Status ──────────────────── */}
+            <section className='dash-hero'>
+              <div className='dash-hero__info'>
+                <h1 className='dash-hero__name'>{venue.name}</h1>
+                {publishedMenu && (
+                  <div className='dash-hero__link-row'>
+                    <a
+                      href={menuUrl}
+                      target='_blank'
+                      rel='noopener noreferrer'
+                      className='dash-hero__url'
+                    >
+                      tablia.io/m/{venue.slug}
+                      <ExternalLink size={13} />
+                    </a>
+                    <button
+                      className='dash-hero__copy'
+                      onClick={handleCopyLink}
+                      title='Copiar link'
+                    >
+                      <Copy size={14} />
+                      {linkCopied ? 'Copiado!' : 'Copiar'}
+                    </button>
+                  </div>
+                )}
               </div>
-              {menus.length === 0 && (
-                <button
-                  className='dashboard__add-btn'
-                  onClick={() => setView('import-menu')}
-                >
-                  <Plus size={20} />
-                  Importar menú
-                </button>
-              )}
-            </div>
 
-            {menus.length === 0 ? (
+              <div className='dash-hero__actions'>
+                {publishedMenu ? (
+                  <>
+                    <a
+                      href={menuUrl}
+                      target='_blank'
+                      rel='noopener noreferrer'
+                      className='dash-hero__btn dash-hero__btn--outline'
+                    >
+                      <Eye size={16} />
+                      Ver menú
+                    </a>
+                    <button
+                      className='dash-hero__btn dash-hero__btn--outline'
+                      onClick={() => handleEditMenu(publishedMenu.id)}
+                    >
+                      <Pencil size={16} />
+                      Editar
+                    </button>
+                    <button
+                      className='dash-hero__btn dash-hero__btn--danger'
+                      onClick={() => handleDeleteMenu(publishedMenu.id)}
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    className='dash-hero__btn dash-hero__btn--primary'
+                    onClick={() => setView('import-menu')}
+                  >
+                    <Plus size={18} />
+                    Importar menú
+                  </button>
+                )}
+              </div>
+            </section>
+
+            {/* Show analytics only if menu exists */}
+            {publishedMenu ? (
+              <>
+                {/* ─── Stats Cards ────────────────────────────── */}
+                <section className='dash-stats'>
+                  <div className='dash-stat-card'>
+                    <div className='dash-stat-card__header'>
+                      <span className='dash-stat-card__label'>
+                        Escaneos hoy
+                      </span>
+                      <span className='dash-stat-card__trend dash-stat-card__trend--up'>
+                        +{MOCK_STATS.todayTrend}%
+                      </span>
+                    </div>
+                    <div className='dash-stat-card__value'>
+                      {MOCK_STATS.scansToday}
+                    </div>
+                    <div className='dash-stat-card__sub'>vs ayer</div>
+                  </div>
+                  <div className='dash-stat-card'>
+                    <div className='dash-stat-card__header'>
+                      <span className='dash-stat-card__label'>Esta semana</span>
+                      <span className='dash-stat-card__trend dash-stat-card__trend--up'>
+                        +{MOCK_STATS.weekTrend}%
+                      </span>
+                    </div>
+                    <div className='dash-stat-card__value'>
+                      {MOCK_STATS.scansWeek}
+                    </div>
+                    <div className='dash-stat-card__sub'>últimos 7 días</div>
+                  </div>
+                  <div className='dash-stat-card'>
+                    <div className='dash-stat-card__header'>
+                      <span className='dash-stat-card__label'>
+                        Total histórico
+                      </span>
+                      <Users size={16} className='dash-stat-card__icon' />
+                    </div>
+                    <div className='dash-stat-card__value'>
+                      {MOCK_STATS.scansTotal.toLocaleString()}
+                    </div>
+                    <div className='dash-stat-card__sub'>desde la creación</div>
+                  </div>
+                </section>
+
+                {/* ─── Charts Row ────────────────────────────── */}
+                <section className='dash-grid'>
+                  {/* Bar chart */}
+                  <div className='dash-card'>
+                    <div className='dash-card__header'>
+                      <h3>
+                        <TrendingUp size={18} />
+                        Escaneos últimos 7 días
+                      </h3>
+                    </div>
+                    <MiniBarChart data={MOCK_DAILY_SCANS} />
+                  </div>
+
+                  {/* Top Items */}
+                  <div className='dash-card'>
+                    <div className='dash-card__header'>
+                      <h3>
+                        <UtensilsCrossed size={18} />
+                        Items más vistos
+                      </h3>
+                    </div>
+                    <div className='dash-leaderboard'>
+                      {MOCK_TOP_ITEMS.map((item, idx) => {
+                        const maxViews = MOCK_TOP_ITEMS[0].views;
+                        return (
+                          <div key={idx} className='dash-leader-row'>
+                            <span className='dash-leader-row__rank'>
+                              {idx + 1}
+                            </span>
+                            <div className='dash-leader-row__info'>
+                              <span className='dash-leader-row__name'>
+                                {item.name}
+                              </span>
+                              <span className='dash-leader-row__cat'>
+                                {item.category}
+                              </span>
+                            </div>
+                            <div className='dash-leader-row__bar-wrap'>
+                              <div
+                                className='dash-leader-row__bar'
+                                style={{
+                                  width: `${(item.views / maxViews) * 100}%`,
+                                }}
+                              />
+                            </div>
+                            <span className='dash-leader-row__views'>
+                              {item.views}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </section>
+
+                {/* ─── Conversations ─────────────────────────── */}
+                <section className='dash-card dash-card--full'>
+                  <div className='dash-card__header'>
+                    <h3>
+                      <MessageCircle size={18} />
+                      Conversaciones recurrentes
+                    </h3>
+                  </div>
+                  <div className='dash-conversations'>
+                    {MOCK_CONVERSATIONS.map((conv, idx) => (
+                      <div key={idx} className='dash-conv-row'>
+                        <MessageCircle
+                          size={16}
+                          className='dash-conv-row__icon'
+                        />
+                        <span className='dash-conv-row__question'>
+                          {conv.question}
+                        </span>
+                        <span className='dash-conv-row__count'>
+                          {conv.count} veces
+                        </span>
+                        <ChevronRight
+                          size={16}
+                          className='dash-conv-row__arrow'
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              </>
+            ) : (
+              /* Empty state when no menu */
               <div className='dashboard__empty'>
                 <div className='dashboard__empty-icon'>
                   <QrCode size={48} />
@@ -272,50 +532,6 @@ export function Dashboard() {
                   <Plus size={20} />
                   Importar menú
                 </button>
-              </div>
-            ) : (
-              <div className='dashboard__menu-grid'>
-                {menus.map((menu) => (
-                  <div key={menu.id} className='dashboard__menu-card'>
-                    <h3>{menu.name}</h3>
-                    <p>Fuente: {menu.source_type}</p>
-                    <div className='dashboard__menu-stats'>
-                      <span
-                        className={`dashboard__status dashboard__status--${menu.status}`}
-                      >
-                        {menu.status === 'published'
-                          ? '🟢 Publicado'
-                          : menu.status === 'review'
-                            ? '🟡 En revisión'
-                            : menu.status === 'parsing'
-                              ? '⏳ Procesando'
-                              : '📝 Borrador'}
-                      </span>
-                      {menu.status === 'published' && (
-                        <a
-                          href={`/m/${venue.slug}`}
-                          target='_blank'
-                          rel='noopener noreferrer'
-                          className='dashboard__view-link'
-                        >
-                          <Eye size={14} /> Ver menú
-                        </a>
-                      )}
-                      <button
-                        className='dashboard__view-link'
-                        onClick={() => handleEditMenu(menu.id)}
-                      >
-                        <Pencil size={14} /> Editar
-                      </button>
-                      <button
-                        className='dashboard__view-link dashboard__view-link--danger'
-                        onClick={() => handleDeleteMenu(menu.id)}
-                      >
-                        <Trash2 size={14} /> Eliminar
-                      </button>
-                    </div>
-                  </div>
-                ))}
               </div>
             )}
           </>
