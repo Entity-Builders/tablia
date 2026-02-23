@@ -123,7 +123,7 @@ export async function parseMenuFromText(text: string): Promise<ParsedMenu> {
     model: 'gemini-2.0-flash',
     generationConfig: {
       responseMimeType: 'application/json',
-      maxOutputTokens: 8192,
+      maxOutputTokens: 65536,
     },
   });
 
@@ -167,7 +167,7 @@ export async function parseMenuFromFile(file: File): Promise<ParsedMenu> {
     model: 'gemini-2.0-flash',
     generationConfig: {
       responseMimeType: 'application/json',
-      maxOutputTokens: 8192,
+      maxOutputTokens: 65536,
     },
   });
 
