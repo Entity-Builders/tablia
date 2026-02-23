@@ -6,10 +6,14 @@ import {
   ChevronUp,
   Tag,
 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { lazy, Suspense, useState, useEffect } from 'react';
 import type { MenuCategory, MenuItem } from '../types';
-import { MenuChat } from '../components/MenuChat';
 import './MenuView.css';
+
+// Lazy-load chat — Gemini SDK only downloads when user opens chat
+const MenuChat = lazy(() =>
+  import('../components/MenuChat').then((m) => ({ default: m.MenuChat })),
+);
 
 interface MenuData {
   venue: {
@@ -42,7 +46,10 @@ export function MenuView() {
         setMenuData(data);
         // Expand all categories by default
         if (data) {
-          setExpandedCats(new Set(data.categories.map((c) => c.id)));
+          // Only expand first category by default — less DOM for slow connections
+          setExpandedCats(
+            new Set(data.categories.length > 0 ? [data.categories[0].id] : []),
+          );
         }
       } catch {
         // Silently fail — will show "not found" state
@@ -202,13 +209,21 @@ export function MenuView() {
         <MessageCircle size={24} />
       </button>
 
-      {/* Chat panel */}
+      {/* Chat panel (lazy-loaded with Gemini SDK) */}
       {chatOpen && (
-        <MenuChat
-          venueName={menuData.venue.name}
-          categories={menuData.categories}
-          onClose={() => setChatOpen(false)}
-        />
+        <Suspense
+          fallback={
+            <div style={{ position: 'fixed', bottom: '5.5rem', right: '1rem' }}>
+              <div className='loading-spinner' />
+            </div>
+          }
+        >
+          <MenuChat
+            venueName={menuData.venue.name}
+            categories={menuData.categories}
+            onClose={() => setChatOpen(false)}
+          />
+        </Suspense>
       )}
     </div>
   );

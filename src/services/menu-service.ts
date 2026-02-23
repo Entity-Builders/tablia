@@ -167,6 +167,7 @@ export async function getMenusByVenue(venueId: string): Promise<Menu[]> {
 
 /**
  * Get a full published menu with categories and items (for MenuView).
+ * Uses a single query with nested selects to minimize roundtrips.
  */
 export async function getPublishedMenu(venueSlug: string): Promise<{
   venue: {
@@ -177,47 +178,44 @@ export async function getPublishedMenu(venueSlug: string): Promise<{
   };
   categories: (MenuCategory & { items: MenuItem[] })[];
 } | null> {
-  // 1. Get venue
-  const { data: venue } = await supabase
+  // Single query: venue → published menu → categories → items
+  const { data: venue, error } = await supabase
     .from('tablia_venues')
-    .select('id, name, slug, cuisine_type, logo_url')
+    .select(
+      `
+      id, name, slug, cuisine_type, logo_url,
+      tablia_menus!inner (
+        id, status,
+        tablia_menu_categories (
+          *,
+          tablia_menu_items (*)
+        )
+      )
+    `,
+    )
     .eq('slug', venueSlug)
+    .eq('tablia_menus.status', 'published')
     .single();
 
-  if (!venue) return null;
+  if (error || !venue) return null;
 
-  // 2. Get published menu
-  const { data: menu } = await supabase
-    .from('tablia_menus')
-    .select('id')
-    .eq('venue_id', venue.id)
-    .eq('status', 'published')
-    .order('updated_at', { ascending: false })
-    .limit(1)
-    .single();
-
+  // Extract from nested structure
+  const menus = (venue as any).tablia_menus;
+  const menu = Array.isArray(menus) ? menus[0] : menus;
   if (!menu) return null;
 
-  // 3. Get categories with items
-  const { data: categories } = await supabase
-    .from('tablia_menu_categories')
-    .select('*')
-    .eq('menu_id', menu.id)
-    .eq('is_visible', true)
-    .order('sort_order');
+  const rawCategories = menu.tablia_menu_categories || [];
 
-  const { data: items } = await supabase
-    .from('tablia_menu_items')
-    .select('*')
-    .eq('menu_id', menu.id)
-    .eq('is_available', true)
-    .order('sort_order');
-
-  // Group items by category
-  const categoriesWithItems = (categories || []).map((cat) => ({
-    ...cat,
-    items: (items || []).filter((item) => item.category_id === cat.id),
-  }));
+  // Filter visible categories, sort, and attach sorted available items
+  const categoriesWithItems = rawCategories
+    .filter((cat: any) => cat.is_visible)
+    .sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+    .map((cat: any) => ({
+      ...cat,
+      items: (cat.tablia_menu_items || [])
+        .filter((item: any) => item.is_available)
+        .sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0)),
+    }));
 
   return {
     venue: {

@@ -1,7 +1,14 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import type { ChatMessage } from '../types';
 
-const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY || '');
+// Lazy-load Gemini SDK — only downloaded when user actually sends a chat message
+let genAI: any = null;
+async function getGenAI() {
+  if (!genAI) {
+    const { GoogleGenerativeAI } = await import('@google/generative-ai');
+    genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY || '');
+  }
+  return genAI;
+}
 
 /**
  * Build the system prompt with full menu context.
@@ -72,7 +79,8 @@ export async function sendChatMessage(
   history: ChatMessage[],
   userMessage: string,
 ): Promise<string> {
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+  const ai = await getGenAI();
+  const model = ai.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
   const systemPrompt = buildSystemPrompt(venueName, menuContext);
 
