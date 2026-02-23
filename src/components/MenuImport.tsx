@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import type { ParsedMenu } from '../types';
 import { MenuReview } from './MenuReview';
 import {
@@ -20,6 +20,15 @@ import './MenuImport.css';
 
 type ImportStep = 'input' | 'parsing' | 'review' | 'done';
 type InputMode = 'file' | 'text';
+
+const PARSING_MESSAGES = [
+  'Leyendo el menú…',
+  'Identificando secciones y categorías…',
+  'Extrayendo platos y precios…',
+  'Detectando etiquetas dietarias…',
+  'Organizando la estructura…',
+  'Casi listo, últimos ajustes…',
+];
 
 interface MenuImportProps {
   venueId: string;
@@ -51,7 +60,20 @@ export function MenuImport({
   const [parsedMenu, setParsedMenu] = useState<ParsedMenu | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [loadingMsgIdx, setLoadingMsgIdx] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Cycle loading messages while parsing
+  useEffect(() => {
+    if (step !== 'parsing') return;
+    setLoadingMsgIdx(0);
+    const interval = setInterval(() => {
+      setLoadingMsgIdx((prev) =>
+        prev < PARSING_MESSAGES.length - 1 ? prev + 1 : prev,
+      );
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [step]);
 
   // ─── File validation ────────────────────────────────────────────
 
@@ -288,9 +310,17 @@ export function MenuImport({
             <Loader2 size={40} className='menu-import__spin' />
           </div>
           <h3>Analizando tu menú...</h3>
-          <p className='menu-import__hint'>
-            Tablia está identificando secciones, platos, precios y etiquetas.
+          <p className='menu-import__loading-msg' key={loadingMsgIdx}>
+            {PARSING_MESSAGES[loadingMsgIdx]}
           </p>
+          <div className='menu-import__loading-dots'>
+            {PARSING_MESSAGES.map((_, i) => (
+              <span
+                key={i}
+                className={`menu-import__dot ${i <= loadingMsgIdx ? 'menu-import__dot--active' : ''}`}
+              />
+            ))}
+          </div>
         </div>
       </div>
     );
