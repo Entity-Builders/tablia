@@ -321,6 +321,12 @@ export function MenuImport({
               />
             ))}
           </div>
+          {loadingMsgIdx >= PARSING_MESSAGES.length - 1 && (
+            <p className='menu-import__loading-hint'>
+              Podés cerrar esta ventana. Cuando vuelvas, tu menú va a estar
+              listo para revisar.
+            </p>
+          )}
         </div>
       </div>
     );

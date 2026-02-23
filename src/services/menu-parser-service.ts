@@ -149,25 +149,13 @@ interface CategorySkeleton {
   metadata?: ParsedMenu['metadata'];
 }
 
-async function parseChunked(
-  contentParts: Parameters<
-    ReturnType<typeof genAI.getGenerativeModel>['startChat']
-  >[0] extends { history: infer H }
-    ? H
-    : never,
-  contentForChat: {
-    role: 'user';
-    parts:
-      | { text: string }[]
-      | { text: string; inlineData?: { mimeType: string; data: string } }[];
-  },
-): Promise<ParsedMenu> {
+async function parseChunked(chatParts: any[]): Promise<ParsedMenu> {
   const model = getModel();
 
   // Phase 1: Extract category names only (small response)
   const chat = model.startChat();
   const catResult = await chat.sendMessage([
-    ...contentForChat.parts,
+    ...chatParts,
     { text: CATEGORIES_PROMPT },
   ]);
   const skeleton = parseJsonResponse<CategorySkeleton>(
@@ -233,10 +221,9 @@ export async function parseMenuFromText(text: string): Promise<ParsedMenu> {
   console.log(
     '[menu-parser] Text menu too large, switching to chunked parsing...',
   );
-  return parseChunked([], {
-    role: 'user',
-    parts: [{ text: `${SYSTEM_PROMPT}\n\nMenú a analizar:\n\n${text}` }],
-  });
+  return parseChunked([
+    { text: `${SYSTEM_PROMPT}\n\nMenú a analizar:\n\n${text}` },
+  ]);
 }
 
 /**
@@ -284,12 +271,9 @@ export async function parseMenuFromFile(file: File): Promise<ParsedMenu> {
   console.log(
     '[menu-parser] File menu too large, switching to chunked parsing...',
   );
-  return parseChunked([], {
-    role: 'user',
-    parts: [
-      { text: SYSTEM_PROMPT },
-      { text: 'Este es un menú para analizar:' },
-      { inlineData } as any,
-    ],
-  });
+  return parseChunked([
+    { text: SYSTEM_PROMPT },
+    { text: 'Este es un menú para analizar:' },
+    { inlineData },
+  ]);
 }
