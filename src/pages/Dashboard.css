@@ -277,6 +277,15 @@
   border-color: var(--accent);
 }
 
+.dash-hero__status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  margin-top: 0.35rem;
+}
+
 .dash-hero__actions {
   display: flex;
   align-items: center;
