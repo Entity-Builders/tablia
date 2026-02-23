@@ -36,43 +36,41 @@ FORMATO DE RESPUESTA (JSON):
     "cuisine_type": "Tipo de cocina si se infiere",
     "confidence": 0.95
   }
-}
+}`;
 
-EJEMPLO:
-Input: "ENTRADAS Empanadas de carne (x3) $2500 Provoleta con orégano $3200 PLATOS PRINCIPALES Bife de chorizo con papas $8500 Milanesa napolitana con fritas $7200 (sin gluten sobre aviso) BEBIDAS Coca-Cola $1500 Cerveza artesanal IPA $3000 Agua mineral $1000"
+const CATEGORIES_PROMPT = `Analiza este menú y devolvé SOLAMENTE la lista de secciones/categorías que encontrás, con su descripción si existe.
 
-Output:
+Responde SOLO con este formato JSON:
+{
+  "categories": [
+    { "name": "Entradas", "description": null },
+    { "name": "Platos Principales", "description": "Los platos incluyen guarnición" }
+  ],
+  "metadata": {
+    "restaurant_name": "Nombre si se detecta",
+    "cuisine_type": "Tipo de cocina",
+    "confidence": 0.95
+  }
+}`;
+
+function buildItemsPrompt(categoryNames: string[]): string {
+  const list = categoryNames.map((n) => `"${n}"`).join(', ');
+  return `Ahora extraé TODOS los platos/items de las siguientes secciones: ${list}
+
+Para cada item extraé: name, description (null si no tiene), price (número), currency, tags (array de strings).
+
+Responde SOLO con este formato JSON:
 {
   "categories": [
     {
-      "name": "Entradas",
+      "name": "Nombre de la sección",
       "items": [
-        { "name": "Empanadas de carne (x3)", "description": null, "price": 2500, "currency": "ARS", "tags": [] },
-        { "name": "Provoleta con orégano", "description": null, "price": 3200, "currency": "ARS", "tags": [] }
-      ]
-    },
-    {
-      "name": "Platos Principales",
-      "items": [
-        { "name": "Bife de chorizo con papas", "description": null, "price": 8500, "currency": "ARS", "tags": [] },
-        { "name": "Milanesa napolitana con fritas", "description": "Sin gluten sobre aviso", "price": 7200, "currency": "ARS", "tags": ["sin-gluten"] }
-      ]
-    },
-    {
-      "name": "Bebidas",
-      "items": [
-        { "name": "Coca-Cola", "description": null, "price": 1500, "currency": "ARS", "tags": [] },
-        { "name": "Cerveza artesanal IPA", "description": null, "price": 3000, "currency": "ARS", "tags": [] },
-        { "name": "Agua mineral", "description": null, "price": 1000, "currency": "ARS", "tags": [] }
+        { "name": "Plato", "description": "desc o null", "price": 1500, "currency": "ARS", "tags": [] }
       ]
     }
-  ],
-  "metadata": {
-    "restaurant_name": null,
-    "cuisine_type": "Parrilla/Argentina",
-    "confidence": 0.92
-  }
+  ]
 }`;
+}
 
 const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY || '');
 
@@ -87,22 +85,25 @@ export const SUPPORTED_FILE_TYPES: Record<string, string> = {
 /** Max file size in bytes (10 MB). */
 export const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
-/** Clean Gemini response and parse as ParsedMenu JSON. */
-function parseGeminiResponse(raw: string): ParsedMenu {
+/** Items-per-batch when chunking large menus. */
+const CATEGORY_BATCH_SIZE = 5;
+
+/** Clean Gemini response and parse as JSON. */
+function parseJsonResponse<T>(raw: string): T {
   // Strategy 1: Strip markdown fences and try parsing
-  let cleaned = raw
+  const cleaned = raw
     .replace(/```json\n?/g, '')
     .replace(/```\n?/g, '')
     .trim();
 
   try {
-    return JSON.parse(cleaned) as ParsedMenu;
+    return JSON.parse(cleaned) as T;
   } catch {
     // Strategy 2: Extract the first JSON object {...} from the response
     const jsonMatch = raw.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       try {
-        return JSON.parse(jsonMatch[0]) as ParsedMenu;
+        return JSON.parse(jsonMatch[0]) as T;
       } catch {
         // fall through
       }
@@ -115,30 +116,132 @@ function parseGeminiResponse(raw: string): ParsedMenu {
   }
 }
 
+function getModel() {
+  return genAI.getGenerativeModel({
+    model: 'gemini-2.0-flash',
+    generationConfig: { responseMimeType: 'application/json' },
+  });
+}
+
+// ─── Single-shot parse (small menus) ────────────────────────────
+
+async function parseSingleShot(
+  contentParts: Parameters<
+    ReturnType<typeof genAI.getGenerativeModel>['generateContent']
+  >[0],
+): Promise<ParsedMenu> {
+  const model = getModel();
+  const result = await model.generateContent(contentParts);
+
+  // Check for truncation
+  const candidate = result.response.candidates?.[0];
+  if (candidate?.finishReason === 'MAX_TOKENS') {
+    return null as unknown as ParsedMenu; // signal to use chunked approach
+  }
+
+  return parseJsonResponse<ParsedMenu>(result.response.text());
+}
+
+// ─── Chunked parse (large menus) ────────────────────────────────
+
+interface CategorySkeleton {
+  categories: { name: string; description?: string | null }[];
+  metadata?: ParsedMenu['metadata'];
+}
+
+async function parseChunked(
+  contentParts: Parameters<
+    ReturnType<typeof genAI.getGenerativeModel>['startChat']
+  >[0] extends { history: infer H }
+    ? H
+    : never,
+  contentForChat: {
+    role: 'user';
+    parts:
+      | { text: string }[]
+      | { text: string; inlineData?: { mimeType: string; data: string } }[];
+  },
+): Promise<ParsedMenu> {
+  const model = getModel();
+
+  // Phase 1: Extract category names only (small response)
+  const chat = model.startChat();
+  const catResult = await chat.sendMessage([
+    ...contentForChat.parts,
+    { text: CATEGORIES_PROMPT },
+  ]);
+  const skeleton = parseJsonResponse<CategorySkeleton>(
+    catResult.response.text(),
+  );
+  const categoryNames = skeleton.categories.map((c) => c.name);
+
+  console.log(
+    `[menu-parser] Chunked parse: ${categoryNames.length} categories found. Fetching items in batches of ${CATEGORY_BATCH_SIZE}...`,
+  );
+
+  // Phase 2: Extract items in batches (using same chat so image stays in context)
+  const allCategories: ParsedMenu['categories'] = [];
+
+  for (let i = 0; i < categoryNames.length; i += CATEGORY_BATCH_SIZE) {
+    const batch = categoryNames.slice(i, i + CATEGORY_BATCH_SIZE);
+    const prompt = buildItemsPrompt(batch);
+
+    const itemsResult = await chat.sendMessage(prompt);
+    const parsed = parseJsonResponse<{ categories: ParsedMenu['categories'] }>(
+      itemsResult.response.text(),
+    );
+
+    // Merge descriptions from skeleton
+    for (const cat of parsed.categories) {
+      const skeletonCat = skeleton.categories.find((s) => s.name === cat.name);
+      if (skeletonCat?.description) {
+        cat.description = skeletonCat.description;
+      }
+      allCategories.push(cat);
+    }
+
+    console.log(
+      `[menu-parser] Batch ${Math.floor(i / CATEGORY_BATCH_SIZE) + 1}: extracted ${parsed.categories.length} categories`,
+    );
+  }
+
+  return {
+    categories: allCategories,
+    metadata: skeleton.metadata,
+  };
+}
+
+// ─── Public API ─────────────────────────────────────────────────
+
 /**
  * Parse raw menu text into structured categories + items using Gemini AI.
+ * Automatically falls back to chunked parsing if the menu is too large.
  */
 export async function parseMenuFromText(text: string): Promise<ParsedMenu> {
-  const model = genAI.getGenerativeModel({
-    model: 'gemini-2.0-flash',
-    generationConfig: {
-      responseMimeType: 'application/json',
-      maxOutputTokens: 65536,
-    },
-  });
-
-  const result = await model.generateContent([
+  const contentParts = [
     { text: SYSTEM_PROMPT },
     {
       text: `Analiza el siguiente menú y devuelve JSON estructurado:\n\n${text}`,
     },
-  ]);
+  ];
 
-  return parseGeminiResponse(result.response.text());
+  // Try single-shot first
+  const result = await parseSingleShot(contentParts);
+  if (result) return result;
+
+  // Fallback to chunked
+  console.log(
+    '[menu-parser] Text menu too large, switching to chunked parsing...',
+  );
+  return parseChunked([], {
+    role: 'user',
+    parts: [{ text: `${SYSTEM_PROMPT}\n\nMenú a analizar:\n\n${text}` }],
+  });
 }
 
 /**
  * Parse a menu file (PDF or image) into structured data using Gemini multimodal.
+ * Uses chunked parsing via chat to handle large menus without hitting token limits.
  */
 export async function parseMenuFromFile(file: File): Promise<ParsedMenu> {
   // Validate MIME type
@@ -163,26 +266,30 @@ export async function parseMenuFromFile(file: File): Promise<ParsedMenu> {
     ),
   );
 
-  const model = genAI.getGenerativeModel({
-    model: 'gemini-2.0-flash',
-    generationConfig: {
-      responseMimeType: 'application/json',
-      maxOutputTokens: 65536,
-    },
-  });
+  const inlineData = { mimeType: file.type, data: base64 };
 
-  const result = await model.generateContent([
+  // Try single-shot first
+  const contentParts = [
     { text: SYSTEM_PROMPT },
     {
       text: 'Analiza el siguiente menú (archivo adjunto) y devuelve JSON estructurado:',
     },
-    {
-      inlineData: {
-        mimeType: file.type,
-        data: base64,
-      },
-    },
-  ]);
+    { inlineData },
+  ];
 
-  return parseGeminiResponse(result.response.text());
+  const result = await parseSingleShot(contentParts);
+  if (result) return result;
+
+  // Fallback to chunked (file is too large for single response)
+  console.log(
+    '[menu-parser] File menu too large, switching to chunked parsing...',
+  );
+  return parseChunked([], {
+    role: 'user',
+    parts: [
+      { text: SYSTEM_PROMPT },
+      { text: 'Este es un menú para analizar:' },
+      { inlineData } as any,
+    ],
+  });
 }
