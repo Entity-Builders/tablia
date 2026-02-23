@@ -2,18 +2,28 @@ import { useAuth } from '../contexts/AuthProvider';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect, useCallback } from 'react';
 import { MenuImport } from '../components/MenuImport';
+import { MenuReview } from '../components/MenuReview';
 import {
   Plus,
   LogOut,
   UtensilsCrossed,
   QrCode,
   Eye,
+  Pencil,
+  Trash2,
   Store,
+  ArrowLeft,
+  Loader2,
 } from 'lucide-react';
-import type { Venue, Menu } from '../types';
+import type { Venue, Menu, ParsedMenu } from '../types';
 import './Dashboard.css';
 
-type DashboardView = 'loading' | 'create-venue' | 'venue' | 'import-menu';
+type DashboardView =
+  | 'loading'
+  | 'create-venue'
+  | 'venue'
+  | 'import-menu'
+  | 'edit-menu';
 
 export function Dashboard() {
   const { user, signOut } = useAuth();
@@ -26,6 +36,12 @@ export function Dashboard() {
   const [venueSlug, setVenueSlug] = useState('');
   const [venueError, setVenueError] = useState<string | null>(null);
   const [creatingVenue, setCreatingVenue] = useState(false);
+  const [editingMenuId, setEditingMenuId] = useState<string | null>(null);
+  const [editingParsedMenu, setEditingParsedMenu] = useState<ParsedMenu | null>(
+    null,
+  );
+  const [editLoading, setEditLoading] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
 
   const loadVenues = useCallback(async () => {
     try {
@@ -94,6 +110,57 @@ export function Dashboard() {
       setMenus(venueMenus);
     }
     setView('venue');
+  };
+
+  const handleEditMenu = async (menuId: string) => {
+    setEditLoading(true);
+    setEditError(null);
+    setEditingMenuId(menuId);
+    setView('edit-menu');
+
+    try {
+      const { getMenuForEdit } = await import('../services/menu-service');
+      const parsed = await getMenuForEdit(menuId);
+      setEditingParsedMenu(parsed);
+    } catch (err) {
+      setEditError(
+        err instanceof Error ? err.message : 'Error al cargar el menú',
+      );
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
+  const handleEditConfirm = async (editedMenu: ParsedMenu) => {
+    if (!editingMenuId) return;
+    setEditError(null);
+
+    try {
+      const { confirmParsedMenu } = await import('../services/menu-service');
+      await confirmParsedMenu(editingMenuId, editedMenu);
+      await handleMenuCreated();
+    } catch (err) {
+      setEditError(
+        err instanceof Error ? err.message : 'Error al guardar cambios',
+      );
+    }
+  };
+
+  const handleDeleteMenu = async (menuId: string) => {
+    if (
+      !confirm(
+        '¿Estás seguro de que querés eliminar este menú? Esta acción no se puede deshacer.',
+      )
+    )
+      return;
+
+    try {
+      const { deleteMenu } = await import('../services/menu-service');
+      await deleteMenu(menuId);
+      await handleMenuCreated();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Error al eliminar el menú');
+    }
   };
 
   // Auto-generate slug from name
@@ -177,13 +244,15 @@ export function Dashboard() {
                   tablia.io/m/{venue.slug}
                 </span>
               </div>
-              <button
-                className='dashboard__add-btn'
-                onClick={() => setView('import-menu')}
-              >
-                <Plus size={20} />
-                Importar menú
-              </button>
+              {menus.length === 0 && (
+                <button
+                  className='dashboard__add-btn'
+                  onClick={() => setView('import-menu')}
+                >
+                  <Plus size={20} />
+                  Importar menú
+                </button>
+              )}
             </div>
 
             {menus.length === 0 ? (
@@ -232,6 +301,18 @@ export function Dashboard() {
                           <Eye size={14} /> Ver menú
                         </a>
                       )}
+                      <button
+                        className='dashboard__view-link'
+                        onClick={() => handleEditMenu(menu.id)}
+                      >
+                        <Pencil size={14} /> Editar
+                      </button>
+                      <button
+                        className='dashboard__view-link dashboard__view-link--danger'
+                        onClick={() => handleDeleteMenu(menu.id)}
+                      >
+                        <Trash2 size={14} /> Eliminar
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -248,6 +329,38 @@ export function Dashboard() {
             onMenuCreated={handleMenuCreated}
             onCancel={() => setView('venue')}
           />
+        )}
+
+        {/* Edit Menu */}
+        {view === 'edit-menu' && (
+          <div className='menu-import'>
+            <div className='menu-import__header'>
+              <button
+                className='menu-import__back'
+                onClick={() => setView('venue')}
+              >
+                <ArrowLeft size={20} />
+              </button>
+              <h2>Editar menú</h2>
+            </div>
+
+            {editLoading && (
+              <div className='menu-import__body menu-import__body--center'>
+                <Loader2 size={40} className='menu-import__spin' />
+                <h3>Cargando menú...</h3>
+              </div>
+            )}
+
+            {editError && <div className='menu-import__error'>{editError}</div>}
+
+            {!editLoading && editingParsedMenu && (
+              <MenuReview
+                parsedMenu={editingParsedMenu}
+                onConfirm={handleEditConfirm}
+                confirmLabel='Guardar cambios'
+              />
+            )}
+          </div>
         )}
       </main>
     </div>

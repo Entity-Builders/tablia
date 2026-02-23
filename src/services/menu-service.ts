@@ -11,6 +11,19 @@ export async function createMenuFromText(
   text: string,
   name?: string,
 ): Promise<{ menu: Menu; parsed: ParsedMenu }> {
+  // 0. Guard: only 1 menu per venue
+  const { count, error: countError } = await supabase
+    .from('tablia_menus')
+    .select('id', { count: 'exact', head: true })
+    .eq('venue_id', venueId);
+
+  if (countError) throw new Error(countError.message);
+  if ((count ?? 0) > 0) {
+    throw new Error(
+      'Este establecimiento ya tiene un menú. Eliminá el existente antes de crear uno nuevo.',
+    );
+  }
+
   // 1. Create menu record in 'parsing' state
   const { data: menu, error: menuError } = await supabase
     .from('tablia_menus')
@@ -124,6 +137,21 @@ export async function confirmParsedMenu(
 }
 
 /**
+ * Delete a menu and all its categories/items.
+ */
+export async function deleteMenu(menuId: string): Promise<void> {
+  await supabase.from('tablia_menu_items').delete().eq('menu_id', menuId);
+  await supabase.from('tablia_menu_categories').delete().eq('menu_id', menuId);
+
+  const { error } = await supabase
+    .from('tablia_menus')
+    .delete()
+    .eq('id', menuId);
+
+  if (error) throw new Error(error.message);
+}
+
+/**
  * Get all menus for a venue (Dashboard).
  */
 export async function getMenusByVenue(venueId: string): Promise<Menu[]> {
@@ -199,5 +227,38 @@ export async function getPublishedMenu(venueSlug: string): Promise<{
       logo_url: venue.logo_url,
     },
     categories: categoriesWithItems as (MenuCategory & { items: MenuItem[] })[],
+  };
+}
+
+/**
+ * Load an existing menu's data as a ParsedMenu shape (for editing in MenuReview).
+ */
+export async function getMenuForEdit(menuId: string): Promise<ParsedMenu> {
+  const { data: categories } = await supabase
+    .from('tablia_menu_categories')
+    .select('*')
+    .eq('menu_id', menuId)
+    .order('sort_order');
+
+  const { data: items } = await supabase
+    .from('tablia_menu_items')
+    .select('*')
+    .eq('menu_id', menuId)
+    .order('sort_order');
+
+  return {
+    categories: (categories || []).map((cat) => ({
+      name: cat.name,
+      description: cat.description || undefined,
+      items: (items || [])
+        .filter((item) => item.category_id === cat.id)
+        .map((item) => ({
+          name: item.name,
+          description: item.description || undefined,
+          price: item.price,
+          currency: item.currency || 'ARS',
+          tags: item.tags || [],
+        })),
+    })),
   };
 }

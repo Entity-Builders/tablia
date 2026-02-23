@@ -302,8 +302,18 @@
   color: var(--accent);
   font-weight: 600;
   text-decoration: none;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-family: inherit;
+  padding: 0;
 }
 
 .dashboard__view-link:hover {
   text-decoration: underline;
+}
+
+.dashboard__view-link--danger {
+  color: var(--error, hsl(0, 75%, 55%));
 }

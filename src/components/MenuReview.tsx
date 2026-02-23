@@ -13,6 +13,7 @@ import './MenuReview.css';
 interface MenuReviewProps {
   parsedMenu: ParsedMenu;
   onConfirm: (editedMenu: ParsedMenu) => void;
+  confirmLabel?: string;
 }
 
 const AVAILABLE_TAGS = [
@@ -26,7 +27,11 @@ const AVAILABLE_TAGS = [
   'casero',
 ];
 
-export function MenuReview({ parsedMenu, onConfirm }: MenuReviewProps) {
+export function MenuReview({
+  parsedMenu,
+  onConfirm,
+  confirmLabel,
+}: MenuReviewProps) {
   const [menu, setMenu] = useState<ParsedMenu>(
     JSON.parse(JSON.stringify(parsedMenu)),
   );
@@ -217,7 +222,7 @@ export function MenuReview({ parsedMenu, onConfirm }: MenuReviewProps) {
         ) : (
           <>
             <Check size={18} />
-            Confirmar y publicar menú
+            {confirmLabel || 'Confirmar y publicar menú'}
           </>
         )}
       </button>
