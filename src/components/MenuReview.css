@@ -34,8 +34,6 @@
   width: 100%;
   padding: 0.75rem 1rem;
   background: var(--bg-secondary);
-  border: none;
-  cursor: pointer;
   color: var(--text-primary);
   font-size: 0.95rem;
   transition: background 0.2s;
@@ -52,6 +50,7 @@
 
 .menu-review__cat-name {
   flex: 1;
+  min-width: 0;
   background: transparent;
   border: none;
   font-family: 'Outfit', sans-serif;
@@ -75,6 +74,60 @@
   padding: 0.1rem 0.5rem;
   border-radius: 999px;
   font-weight: 600;
+  flex-shrink: 0;
+}
+
+/* ─── Category Actions ────────────────────────────────────────── */
+
+.menu-review__cat-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  flex-shrink: 0;
+}
+
+.menu-review__cat-action {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0.3rem;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  transition: all 0.15s;
+}
+
+.menu-review__cat-action:hover:not(:disabled) {
+  background: var(--bg-card);
+  color: var(--text-primary);
+}
+
+.menu-review__cat-action:disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
+
+.menu-review__cat-action--danger:hover:not(:disabled) {
+  background: hsl(0, 80%, 95%);
+  color: var(--error);
+}
+
+.menu-review__cat-toggle {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0.3rem;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.menu-review__cat-toggle:hover {
+  color: var(--text-primary);
 }
 
 /* ─── Items ───────────────────────────────────────────────────── */
@@ -230,6 +283,32 @@
   color: var(--text-muted);
   font-size: 0.85rem;
   font-style: italic;
+}
+
+/* ─── Add Item ────────────────────────────────────────────────── */
+
+.menu-review__add-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  width: 100%;
+  padding: 0.6rem;
+  margin-top: 0.25rem;
+  background: transparent;
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.menu-review__add-item:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(var(--accent-rgb), 0.03);
 }
 
 /* ─── Confirm ─────────────────────────────────────────────────── */

@@ -7,6 +7,9 @@ import {
   ChevronDown,
   ChevronUp,
   Check,
+  ArrowUp,
+  ArrowDown,
+  Plus,
 } from 'lucide-react';
 import './MenuReview.css';
 
@@ -38,6 +41,8 @@ export function MenuReview({
   const [expandedCat, setExpandedCat] = useState<number | null>(0);
   const [confirming, setConfirming] = useState(false);
 
+  // ─── Item helpers ───────────────────────────────────────────────
+
   const updateItemField = (
     catIdx: number,
     itemIdx: number,
@@ -53,19 +58,29 @@ export function MenuReview({
     setMenu(updated);
   };
 
-  const updateCategoryName = (catIdx: number, name: string) => {
-    const updated = { ...menu };
-    const categories = [...updated.categories];
-    categories[catIdx] = { ...categories[catIdx], name };
-    updated.categories = categories;
-    setMenu(updated);
-  };
-
   const removeItem = (catIdx: number, itemIdx: number) => {
     const updated = { ...menu };
     const categories = [...updated.categories];
     const items = categories[catIdx].items.filter((_, i) => i !== itemIdx);
     categories[catIdx] = { ...categories[catIdx], items };
+    updated.categories = categories;
+    setMenu(updated);
+  };
+
+  const addItem = (catIdx: number) => {
+    const updated = { ...menu };
+    const categories = [...updated.categories];
+    const newItem = {
+      name: '',
+      description: undefined,
+      price: 0,
+      currency: 'ARS',
+      tags: [] as string[],
+    };
+    categories[catIdx] = {
+      ...categories[catIdx],
+      items: [...categories[catIdx].items, newItem],
+    };
     updated.categories = categories;
     setMenu(updated);
   };
@@ -77,6 +92,46 @@ export function MenuReview({
       : [...item.tags, tag];
     updateItemField(catIdx, itemIdx, 'tags', tags);
   };
+
+  // ─── Category helpers ──────────────────────────────────────────
+
+  const updateCategoryName = (catIdx: number, name: string) => {
+    const updated = { ...menu };
+    const categories = [...updated.categories];
+    categories[catIdx] = { ...categories[catIdx], name };
+    updated.categories = categories;
+    setMenu(updated);
+  };
+
+  const removeCategory = (catIdx: number) => {
+    const updated = { ...menu };
+    updated.categories = updated.categories.filter((_, i) => i !== catIdx);
+    setMenu(updated);
+    // Adjust expanded state
+    if (expandedCat === catIdx) setExpandedCat(null);
+    else if (expandedCat !== null && expandedCat > catIdx)
+      setExpandedCat(expandedCat - 1);
+  };
+
+  const moveCategory = (catIdx: number, direction: 'up' | 'down') => {
+    const targetIdx = direction === 'up' ? catIdx - 1 : catIdx + 1;
+    if (targetIdx < 0 || targetIdx >= menu.categories.length) return;
+
+    const updated = { ...menu };
+    const categories = [...updated.categories];
+    [categories[catIdx], categories[targetIdx]] = [
+      categories[targetIdx],
+      categories[catIdx],
+    ];
+    updated.categories = categories;
+    setMenu(updated);
+
+    // Follow the section with expanded state
+    if (expandedCat === catIdx) setExpandedCat(targetIdx);
+    else if (expandedCat === targetIdx) setExpandedCat(catIdx);
+  };
+
+  // ─── Confirm ───────────────────────────────────────────────────
 
   const handleConfirm = async () => {
     setConfirming(true);
@@ -101,26 +156,57 @@ export function MenuReview({
         {menu.categories.map((cat, catIdx) => (
           <div key={catIdx} className='menu-review__category'>
             {/* Category header */}
-            <button
-              className='menu-review__cat-header'
-              onClick={() =>
-                setExpandedCat(expandedCat === catIdx ? null : catIdx)
-              }
-            >
+            <div className='menu-review__cat-header'>
               <GripVertical size={16} className='menu-review__grip' />
               <input
                 className='menu-review__cat-name'
                 value={cat.name}
                 onChange={(e) => updateCategoryName(catIdx, e.target.value)}
                 onClick={(e) => e.stopPropagation()}
+                placeholder='Nombre de la sección...'
               />
               <span className='menu-review__cat-count'>{cat.items.length}</span>
-              {expandedCat === catIdx ? (
-                <ChevronUp size={18} />
-              ) : (
-                <ChevronDown size={18} />
-              )}
-            </button>
+
+              {/* Category actions */}
+              <div className='menu-review__cat-actions'>
+                <button
+                  className='menu-review__cat-action'
+                  onClick={() => moveCategory(catIdx, 'up')}
+                  disabled={catIdx === 0}
+                  title='Mover arriba'
+                >
+                  <ArrowUp size={14} />
+                </button>
+                <button
+                  className='menu-review__cat-action'
+                  onClick={() => moveCategory(catIdx, 'down')}
+                  disabled={catIdx === menu.categories.length - 1}
+                  title='Mover abajo'
+                >
+                  <ArrowDown size={14} />
+                </button>
+                <button
+                  className='menu-review__cat-action menu-review__cat-action--danger'
+                  onClick={() => removeCategory(catIdx)}
+                  title='Eliminar sección'
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+
+              <button
+                className='menu-review__cat-toggle'
+                onClick={() =>
+                  setExpandedCat(expandedCat === catIdx ? null : catIdx)
+                }
+              >
+                {expandedCat === catIdx ? (
+                  <ChevronUp size={18} />
+                ) : (
+                  <ChevronDown size={18} />
+                )}
+              </button>
+            </div>
 
             {/* Items */}
             {expandedCat === catIdx && (
@@ -139,6 +225,7 @@ export function MenuReview({
                             e.target.value,
                           )
                         }
+                        placeholder='Nombre del plato...'
                       />
                       <div className='menu-review__item-price'>
                         <span className='menu-review__currency'>$</span>
@@ -165,21 +252,19 @@ export function MenuReview({
                       </button>
                     </div>
 
-                    {item.description && (
-                      <input
-                        className='menu-review__item-desc'
-                        value={item.description}
-                        onChange={(e) =>
-                          updateItemField(
-                            catIdx,
-                            itemIdx,
-                            'description',
-                            e.target.value,
-                          )
-                        }
-                        placeholder='Descripción...'
-                      />
-                    )}
+                    <input
+                      className='menu-review__item-desc'
+                      value={item.description || ''}
+                      onChange={(e) =>
+                        updateItemField(
+                          catIdx,
+                          itemIdx,
+                          'description',
+                          e.target.value,
+                        )
+                      }
+                      placeholder='Descripción (opcional)...'
+                    />
 
                     {/* Tags */}
                     <div className='menu-review__tags'>
@@ -206,6 +291,15 @@ export function MenuReview({
                     No hay platos en esta sección.
                   </p>
                 )}
+
+                {/* Add item button */}
+                <button
+                  className='menu-review__add-item'
+                  onClick={() => addItem(catIdx)}
+                >
+                  <Plus size={14} />
+                  Agregar plato
+                </button>
               </div>
             )}
           </div>
