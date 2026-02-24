@@ -94,6 +94,9 @@ export function Dashboard() {
     null,
   );
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [chatSessions, setChatSessions] = useState<
+    import('../types').ChatSession[]
+  >([]);
 
   const activeMenu = menus[0] ?? null; // first menu (most recent)
   const isPublished = activeMenu?.status === 'published';
@@ -160,6 +163,15 @@ export function Dashboard() {
       setAnalyticsLoading(false);
     }
   }, [venue?.slug, venue?.name, isPublished]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Load real chat sessions from Supabase
+  useEffect(() => {
+    if (!venue) return;
+    import('../services/chat-service')
+      .then(({ getChatSessions }) => getChatSessions(venue.id))
+      .then(setChatSessions)
+      .catch(() => {}); // silently ignore errors
+  }, [venue?.id]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -605,25 +617,65 @@ export function Dashboard() {
                     <div className='dash-card__header'>
                       <h3>
                         <MessageCircle size={18} />
-                        Conversaciones recurrentes
+                        Conversaciones recientes
                       </h3>
+                      <span
+                        style={{
+                          fontSize: '0.8rem',
+                          color: 'var(--text-muted)',
+                        }}
+                      >
+                        {chatSessions.length > 0
+                          ? `${chatSessions.length} conversaciones`
+                          : ''}
+                      </span>
                     </div>
-                    {analyticsData.topConversations.length > 0 ? (
+                    {chatSessions.length > 0 ? (
                       <div className='dash-conversations'>
-                        {analyticsData.topConversations.map((conv, idx) => (
-                          <div key={idx} className='dash-conv-row'>
-                            <MessageCircle
-                              size={16}
-                              className='dash-conv-row__icon'
-                            />
-                            <span className='dash-conv-row__question'>
-                              "{conv.question}"
-                            </span>
-                            <span className='dash-conv-row__count'>
-                              {conv.count} {conv.count === 1 ? 'vez' : 'veces'}
-                            </span>
-                          </div>
-                        ))}
+                        {chatSessions.map((session) => {
+                          const firstUserMsg = session.messages.find(
+                            (m) => m.role === 'user',
+                          );
+                          const msgCount = session.messages.length;
+                          const turnCount = Math.ceil(msgCount / 2);
+                          const timeAgo = new Date(
+                            session.created_at,
+                          ).toLocaleString('es-AR', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          });
+                          return (
+                            <div key={session.id} className='dash-conv-row'>
+                              <MessageCircle
+                                size={16}
+                                className='dash-conv-row__icon'
+                              />
+                              <span className='dash-conv-row__question'>
+                                &ldquo;
+                                {firstUserMsg?.content ?? '(sin mensajes)'}
+                                &rdquo;
+                              </span>
+                              <span
+                                className='dash-conv-row__count'
+                                style={{ minWidth: '4rem', textAlign: 'right' }}
+                              >
+                                {turnCount}{' '}
+                                {turnCount === 1 ? 'turno' : 'turnos'}
+                              </span>
+                              <span
+                                style={{
+                                  fontSize: '0.75rem',
+                                  color: 'var(--text-muted)',
+                                  whiteSpace: 'nowrap',
+                                }}
+                              >
+                                {timeAgo}
+                              </span>
+                            </div>
+                          );
+                        })}
                       </div>
                     ) : (
                       <div
@@ -640,7 +692,7 @@ export function Dashboard() {
                         />
                         <p>Nadie usó el chat todavía.</p>
                         <span style={{ fontSize: '0.85rem', opacity: 0.7 }}>
-                          Las consultas más frecuentes aparecerán acá.
+                          Las conversaciones de tus clientes aparecerán acá.
                         </span>
                       </div>
                     )}

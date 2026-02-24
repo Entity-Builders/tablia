@@ -1,5 +1,55 @@
-import type { ChatMessage } from '../types';
+import type { ChatMessage, ChatSession } from '../types';
 import { analytics } from './analytics';
+
+/**
+ * Fetch all chat sessions for a venue, ordered by most recent.
+ * Used by the Dashboard to show real conversation history.
+ */
+export async function getChatSessions(venueId: string): Promise<ChatSession[]> {
+  const { supabase } = await import('../lib/supabase');
+  const { data, error } = await supabase
+    .from('tablia_chat_sessions')
+    .select('*')
+    .eq('venue_id', venueId)
+    .order('created_at', { ascending: false })
+    .limit(20);
+
+  if (error) throw new Error(error.message);
+  return (data || []) as ChatSession[];
+}
+
+/**
+ * Save or update a chat session in the database.
+ * Call this after each AI response to persist the conversation.
+ */
+export async function saveChatSession(
+  sessionId: string | null,
+  menuId: string,
+  venueId: string,
+  messages: ChatMessage[],
+  customerEmail?: string,
+): Promise<string> {
+  const { supabase } = await import('../lib/supabase');
+
+  if (sessionId) {
+    // Update existing session
+    await supabase
+      .from('tablia_chat_sessions')
+      .update({ messages, updated_at: new Date().toISOString() })
+      .eq('id', sessionId);
+    return sessionId;
+  }
+
+  // Create new session
+  const { data, error } = await supabase
+    .from('tablia_chat_sessions')
+    .insert({ menu_id: menuId, venue_id: venueId, messages, customer_email: customerEmail || null })
+    .select('id')
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data.id;
+}
 
 // Lazy-load Gemini SDK — only downloaded when user actually sends a chat message
 let genAI: any = null;
