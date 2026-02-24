@@ -56,6 +56,11 @@ function MiniBarChart({ data }: { data: { day: string; value: number }[] }) {
   );
 }
 
+import {
+  MainDashboardSkeleton,
+  StatsDashboardSkeleton,
+} from '../components/DashboardSkeleton';
+
 // ─── Dashboard Views ────────────────────────────────────────────
 
 type DashboardView =
@@ -302,11 +307,7 @@ export function Dashboard() {
 
       <main className='dashboard__main'>
         {/* Loading */}
-        {view === 'loading' && (
-          <div className='dashboard__loading'>
-            <div className='loading-spinner' />
-          </div>
-        )}
+        {view === 'loading' && <MainDashboardSkeleton />}
 
         {/* Create Venue */}
         {view === 'create-venue' && (
@@ -465,12 +466,7 @@ export function Dashboard() {
             {/* Show analytics only if menu exists */}
             {isPublished ? (
               analyticsLoading || !analyticsData ? (
-                <div className='dashboard__loading'>
-                  <Loader2 size={32} className='menu-import__spin' />
-                  <p style={{ marginTop: '1rem', color: 'var(--text-muted)' }}>
-                    Cargando métricas...
-                  </p>
-                </div>
+                <StatsDashboardSkeleton />
               ) : (
                 <>
                   {/* ─── Stats Cards ────────────────────────────── */}
