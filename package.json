@@ -10,7 +10,11 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "seed": "tsx --env-file=.env.local --env-file=.env.seed scripts/seed-runner.ts",
+    "seed:restaurant": "tsx --env-file=.env.local --env-file=.env.seed scripts/seed-runner.ts --scenario restaurant-full",
+    "seed:analytics": "tsx --env-file=.env.local --env-file=.env.seed scripts/seed-runner.ts --scenario analytics-ready",
+    "seed:reset": "tsx --env-file=.env.local --env-file=.env.seed scripts/seed-runner.ts --reset"
   },
   "dependencies": {
     "@eb-packages/analytics": "1.0.0",
@@ -33,7 +37,9 @@
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",
     "@vitest/coverage-v8": "^4.0.18",
+    "dotenv": "^17.3.1",
     "jsdom": "^28.1.0",
+    "tsx": "^4.21.0",
     "typescript": "^5.2.2",
     "vite": "^5.3.4",
     "vitest": "^4.0.18"
