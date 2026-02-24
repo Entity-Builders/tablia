@@ -20,52 +20,16 @@ import {
   MessageCircle,
   Copy,
   ExternalLink,
-  ChevronRight,
   Clock,
   FileSearch,
 } from 'lucide-react';
 import type { Venue, Menu, MenuStatus, ParsedMenu } from '../types';
 import './Dashboard.css';
 
-// ─── Mock Analytics Data ────────────────────────────────────────
-
-const MOCK_STATS = {
-  scansToday: 47,
-  scansWeek: 312,
-  scansTotal: 1842,
-  todayTrend: +12, // percent vs yesterday
-  weekTrend: +8,
-};
-
-const MOCK_DAILY_SCANS = [
-  { day: 'Lun', value: 32 },
-  { day: 'Mar', value: 28 },
-  { day: 'Mié', value: 45 },
-  { day: 'Jue', value: 38 },
-  { day: 'Vie', value: 62 },
-  { day: 'Sáb', value: 78 },
-  { day: 'Dom', value: 47 },
-];
-
-const MOCK_TOP_ITEMS = [
-  {
-    name: 'Hamburguesa Clásica',
-    category: 'Principales',
-    views: 520,
-    price: 8500,
-  },
-  { name: 'Gin Tonic de Autor', category: 'Bebidas', views: 450, price: 6200 },
-  { name: 'Ravioles de Calabaza', category: 'Pastas', views: 380, price: 7800 },
-  { name: 'Tiramisú Casero', category: 'Postres', views: 310, price: 4500 },
-  { name: 'Ensalada César', category: 'Entradas', views: 250, price: 5200 },
-];
-
-const MOCK_CONVERSATIONS = [
-  { question: '¿Tienen opciones sin TACC?', count: 125 },
-  { question: '¿Cuál es el horario de atención?', count: 98 },
-  { question: '¿Aceptan reservas para grupos grandes?', count: 76 },
-  { question: '¿Tienen menú infantil?', count: 54 },
-];
+import {
+  getVenueAnalytics,
+  type DashboardAnalytics,
+} from '../services/posthog-service';
 
 // ─── Mini Bar Chart Component ───────────────────────────────────
 
@@ -121,6 +85,11 @@ export function Dashboard() {
   const [linkCopied, setLinkCopied] = useState(false);
   const [showQr, setShowQr] = useState(false);
 
+  const [analyticsData, setAnalyticsData] = useState<DashboardAnalytics | null>(
+    null,
+  );
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+
   const activeMenu = menus[0] ?? null; // first menu (most recent)
   const isPublished = activeMenu?.status === 'published';
   const publicOrigin =
@@ -155,6 +124,19 @@ export function Dashboard() {
   useEffect(() => {
     loadVenues();
   }, [loadVenues]);
+
+  // Load analytics when a published menu is active
+  useEffect(() => {
+    if (venue && isPublished) {
+      setAnalyticsLoading(true);
+      getVenueAnalytics(venue.slug, venue.name)
+        .then(setAnalyticsData)
+        .catch(() => setAnalyticsData(null))
+        .finally(() => setAnalyticsLoading(false));
+    } else {
+      setAnalyticsData(null);
+    }
+  }, [venue?.slug, venue?.name, isPublished]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -482,134 +464,175 @@ export function Dashboard() {
 
             {/* Show analytics only if menu exists */}
             {isPublished ? (
-              <>
-                {/* ─── Stats Cards ────────────────────────────── */}
-                <section className='dash-stats'>
-                  <div className='dash-stat-card'>
-                    <div className='dash-stat-card__header'>
-                      <span className='dash-stat-card__label'>
-                        Escaneos hoy
-                      </span>
-                      <span className='dash-stat-card__trend dash-stat-card__trend--up'>
-                        +{MOCK_STATS.todayTrend}%
-                      </span>
+              analyticsLoading || !analyticsData ? (
+                <div className='dashboard__loading'>
+                  <Loader2 size={32} className='menu-import__spin' />
+                  <p style={{ marginTop: '1rem', color: 'var(--text-muted)' }}>
+                    Cargando métricas...
+                  </p>
+                </div>
+              ) : (
+                <>
+                  {/* ─── Stats Cards ────────────────────────────── */}
+                  <section className='dash-stats'>
+                    <div className='dash-stat-card'>
+                      <div className='dash-stat-card__header'>
+                        <span className='dash-stat-card__label'>
+                          Escaneos hoy
+                        </span>
+                        {analyticsData.stats.scansToday > 0 && (
+                          <span className='dash-stat-card__trend dash-stat-card__trend--up'>
+                            Activo
+                          </span>
+                        )}
+                      </div>
+                      <div className='dash-stat-card__value'>
+                        {analyticsData.stats.scansToday}
+                      </div>
+                      <div className='dash-stat-card__sub'>hoy</div>
                     </div>
-                    <div className='dash-stat-card__value'>
-                      {MOCK_STATS.scansToday}
+                    <div className='dash-stat-card'>
+                      <div className='dash-stat-card__header'>
+                        <span className='dash-stat-card__label'>
+                          Esta semana
+                        </span>
+                      </div>
+                      <div className='dash-stat-card__value'>
+                        {analyticsData.stats.scansWeek}
+                      </div>
+                      <div className='dash-stat-card__sub'>últimos 7 días</div>
                     </div>
-                    <div className='dash-stat-card__sub'>vs ayer</div>
-                  </div>
-                  <div className='dash-stat-card'>
-                    <div className='dash-stat-card__header'>
-                      <span className='dash-stat-card__label'>Esta semana</span>
-                      <span className='dash-stat-card__trend dash-stat-card__trend--up'>
-                        +{MOCK_STATS.weekTrend}%
-                      </span>
+                    <div className='dash-stat-card'>
+                      <div className='dash-stat-card__header'>
+                        <span className='dash-stat-card__label'>
+                          Total histórico
+                        </span>
+                        <Users size={16} className='dash-stat-card__icon' />
+                      </div>
+                      <div className='dash-stat-card__value'>
+                        {analyticsData.stats.scansTotal.toLocaleString()}
+                      </div>
+                      <div className='dash-stat-card__sub'>
+                        desde la creación
+                      </div>
                     </div>
-                    <div className='dash-stat-card__value'>
-                      {MOCK_STATS.scansWeek}
-                    </div>
-                    <div className='dash-stat-card__sub'>últimos 7 días</div>
-                  </div>
-                  <div className='dash-stat-card'>
-                    <div className='dash-stat-card__header'>
-                      <span className='dash-stat-card__label'>
-                        Total histórico
-                      </span>
-                      <Users size={16} className='dash-stat-card__icon' />
-                    </div>
-                    <div className='dash-stat-card__value'>
-                      {MOCK_STATS.scansTotal.toLocaleString()}
-                    </div>
-                    <div className='dash-stat-card__sub'>desde la creación</div>
-                  </div>
-                </section>
+                  </section>
 
-                {/* ─── Charts Row ────────────────────────────── */}
-                <section className='dash-grid'>
-                  {/* Bar chart */}
-                  <div className='dash-card'>
+                  {/* ─── Charts Row ────────────────────────────── */}
+                  <section className='dash-grid'>
+                    {/* Bar chart */}
+                    <div className='dash-card'>
+                      <div className='dash-card__header'>
+                        <h3>
+                          <TrendingUp size={18} />
+                          Escaneos últimos 7 días
+                        </h3>
+                      </div>
+                      <MiniBarChart data={analyticsData.dailyScans} />
+                    </div>
+
+                    {/* Top Items */}
+                    <div className='dash-card'>
+                      <div className='dash-card__header'>
+                        <h3>
+                          <UtensilsCrossed size={18} />
+                          Categorías más vistas
+                        </h3>
+                      </div>
+                      {analyticsData.topCategories.length > 0 ? (
+                        <div className='dash-leaderboard'>
+                          {analyticsData.topCategories.map((cat, idx) => {
+                            const maxViews = Math.max(
+                              1,
+                              analyticsData.topCategories[0].views,
+                            );
+                            return (
+                              <div key={idx} className='dash-leader-row'>
+                                <span className='dash-leader-row__rank'>
+                                  {idx + 1}
+                                </span>
+                                <div className='dash-leader-row__info'>
+                                  <span className='dash-leader-row__name'>
+                                    {cat.name}
+                                  </span>
+                                </div>
+                                <div className='dash-leader-row__bar-wrap'>
+                                  <div
+                                    className='dash-leader-row__bar'
+                                    style={{
+                                      width: `${(cat.views / maxViews) * 100}%`,
+                                    }}
+                                  />
+                                </div>
+                                <span className='dash-leader-row__views'>
+                                  {cat.views}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div
+                          className='dash-leaderboard dash-leaderboard--empty'
+                          style={{
+                            textAlign: 'center',
+                            padding: '2rem 0',
+                            color: 'var(--text-muted)',
+                          }}
+                        >
+                          <p>Aún no hay categorías vistas.</p>
+                        </div>
+                      )}
+                    </div>
+                  </section>
+
+                  {/* ─── Conversations ─────────────────────────── */}
+                  <section className='dash-card dash-card--full'>
                     <div className='dash-card__header'>
                       <h3>
-                        <TrendingUp size={18} />
-                        Escaneos últimos 7 días
+                        <MessageCircle size={18} />
+                        Conversaciones recurrentes
                       </h3>
                     </div>
-                    <MiniBarChart data={MOCK_DAILY_SCANS} />
-                  </div>
-
-                  {/* Top Items */}
-                  <div className='dash-card'>
-                    <div className='dash-card__header'>
-                      <h3>
-                        <UtensilsCrossed size={18} />
-                        Items más vistos
-                      </h3>
-                    </div>
-                    <div className='dash-leaderboard'>
-                      {MOCK_TOP_ITEMS.map((item, idx) => {
-                        const maxViews = MOCK_TOP_ITEMS[0].views;
-                        return (
-                          <div key={idx} className='dash-leader-row'>
-                            <span className='dash-leader-row__rank'>
-                              {idx + 1}
+                    {analyticsData.topConversations.length > 0 ? (
+                      <div className='dash-conversations'>
+                        {analyticsData.topConversations.map((conv, idx) => (
+                          <div key={idx} className='dash-conv-row'>
+                            <MessageCircle
+                              size={16}
+                              className='dash-conv-row__icon'
+                            />
+                            <span className='dash-conv-row__question'>
+                              "{conv.question}"
                             </span>
-                            <div className='dash-leader-row__info'>
-                              <span className='dash-leader-row__name'>
-                                {item.name}
-                              </span>
-                              <span className='dash-leader-row__cat'>
-                                {item.category}
-                              </span>
-                            </div>
-                            <div className='dash-leader-row__bar-wrap'>
-                              <div
-                                className='dash-leader-row__bar'
-                                style={{
-                                  width: `${(item.views / maxViews) * 100}%`,
-                                }}
-                              />
-                            </div>
-                            <span className='dash-leader-row__views'>
-                              {item.views}
+                            <span className='dash-conv-row__count'>
+                              {conv.count} {conv.count === 1 ? 'vez' : 'veces'}
                             </span>
                           </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </section>
-
-                {/* ─── Conversations ─────────────────────────── */}
-                <section className='dash-card dash-card--full'>
-                  <div className='dash-card__header'>
-                    <h3>
-                      <MessageCircle size={18} />
-                      Conversaciones recurrentes
-                    </h3>
-                  </div>
-                  <div className='dash-conversations'>
-                    {MOCK_CONVERSATIONS.map((conv, idx) => (
-                      <div key={idx} className='dash-conv-row'>
-                        <MessageCircle
-                          size={16}
-                          className='dash-conv-row__icon'
-                        />
-                        <span className='dash-conv-row__question'>
-                          {conv.question}
-                        </span>
-                        <span className='dash-conv-row__count'>
-                          {conv.count} veces
-                        </span>
-                        <ChevronRight
-                          size={16}
-                          className='dash-conv-row__arrow'
-                        />
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                </section>
-              </>
+                    ) : (
+                      <div
+                        className='dash-conversations dash-conversations--empty'
+                        style={{
+                          textAlign: 'center',
+                          padding: '2.5rem 0',
+                          color: 'var(--text-muted)',
+                        }}
+                      >
+                        <MessageCircle
+                          size={32}
+                          style={{ opacity: 0.3, marginBottom: '0.5rem' }}
+                        />
+                        <p>Nadie usó el chat todavía.</p>
+                        <span style={{ fontSize: '0.85rem', opacity: 0.7 }}>
+                          Las consultas más frecuentes aparecerán acá.
+                        </span>
+                      </div>
+                    )}
+                  </section>
+                </>
+              )
             ) : !activeMenu ? (
               /* Empty state when no menu at all */
               <div className='dashboard__empty'>

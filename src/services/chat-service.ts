@@ -75,6 +75,7 @@ export function buildMenuContext(
  * Includes full conversation history for multi-turn context.
  */
 export async function sendChatMessage(
+  venueSlug: string,
   venueName: string,
   menuContext: string,
   history: ChatMessage[],
@@ -114,6 +115,7 @@ export async function sendChatMessage(
 
   // Track user question for aggregate insights (top questions, chat usage)
   analytics.track('chat_message_sent', {
+    slug: venueSlug,
     venue_name: venueName,
     message: userMessage,
     message_position: history.length + 1, // 1st msg, 2nd msg, etc.

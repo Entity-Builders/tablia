@@ -5,6 +5,7 @@ import { buildMenuContext, sendChatMessage } from '../services/chat-service';
 import './MenuChat.css';
 
 interface MenuChatProps {
+  venueSlug: string;
   venueName: string;
   categories: (MenuCategory & { items: MenuItem[] })[];
   onClose: () => void;
@@ -17,7 +18,12 @@ const QUICK_ACTIONS = [
   '¿Qué postres tienen?',
 ];
 
-export function MenuChat({ venueName, categories, onClose }: MenuChatProps) {
+export function MenuChat({
+  venueSlug,
+  venueName,
+  categories,
+  onClose,
+}: MenuChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -56,6 +62,7 @@ export function MenuChat({ venueName, categories, onClose }: MenuChatProps) {
 
     try {
       const response = await sendChatMessage(
+        venueSlug,
         venueName,
         menuContext,
         messages,

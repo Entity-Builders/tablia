@@ -243,6 +243,7 @@ export function MenuView() {
           }
         >
           <MenuChat
+            venueSlug={menuData.venue.slug}
             venueName={menuData.venue.name}
             categories={menuData.categories}
             onClose={() => setChatOpen(false)}
