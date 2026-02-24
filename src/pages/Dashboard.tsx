@@ -97,6 +97,7 @@ export function Dashboard() {
   const [chatSessions, setChatSessions] = useState<
     import('../types').ChatSession[]
   >([]);
+  const [expandedSession, setExpandedSession] = useState<string | null>(null);
 
   const activeMenu = menus[0] ?? null; // first menu (most recent)
   const isPublished = activeMenu?.status === 'published';
@@ -636,8 +637,7 @@ export function Dashboard() {
                           const firstUserMsg = session.messages.find(
                             (m) => m.role === 'user',
                           );
-                          const msgCount = session.messages.length;
-                          const turnCount = Math.ceil(msgCount / 2);
+                          const isExpanded = expandedSession === session.id;
                           const timeAgo = new Date(
                             session.created_at,
                           ).toLocaleString('es-AR', {
@@ -647,32 +647,74 @@ export function Dashboard() {
                             minute: '2-digit',
                           });
                           return (
-                            <div key={session.id} className='dash-conv-row'>
-                              <MessageCircle
-                                size={16}
-                                className='dash-conv-row__icon'
-                              />
-                              <span className='dash-conv-row__question'>
-                                &ldquo;
-                                {firstUserMsg?.content ?? '(sin mensajes)'}
-                                &rdquo;
-                              </span>
-                              <span
-                                className='dash-conv-row__count'
-                                style={{ minWidth: '4rem', textAlign: 'right' }}
+                            <div
+                              key={session.id}
+                              className={`dash-conv-row ${isExpanded ? 'dash-conv-row--expanded' : ''}`}
+                            >
+                              {/* ─ Header: click to toggle ─ */}
+                              <button
+                                className='dash-conv-row__toggle'
+                                onClick={() =>
+                                  setExpandedSession(
+                                    isExpanded ? null : session.id,
+                                  )
+                                }
                               >
-                                {turnCount}{' '}
-                                {turnCount === 1 ? 'turno' : 'turnos'}
-                              </span>
-                              <span
-                                style={{
-                                  fontSize: '0.75rem',
-                                  color: 'var(--text-muted)',
-                                  whiteSpace: 'nowrap',
-                                }}
-                              >
-                                {timeAgo}
-                              </span>
+                                <MessageCircle
+                                  size={16}
+                                  className='dash-conv-row__icon'
+                                />
+                                <span className='dash-conv-row__question'>
+                                  &ldquo;
+                                  {firstUserMsg?.content ?? '(sin mensajes)'}
+                                  &rdquo;
+                                </span>
+                                <span className='dash-conv-row__meta'>
+                                  {session.customer_email && (
+                                    <span className='dash-conv-row__email'>
+                                      {session.customer_email}
+                                    </span>
+                                  )}
+                                  <span
+                                    style={{
+                                      fontSize: '0.75rem',
+                                      color: 'var(--text-muted)',
+                                      whiteSpace: 'nowrap',
+                                    }}
+                                  >
+                                    {timeAgo}
+                                  </span>
+                                  <span
+                                    style={{
+                                      fontSize: '0.75rem',
+                                      color: 'var(--text-muted)',
+                                    }}
+                                  >
+                                    {isExpanded ? '▲' : '▼'}
+                                  </span>
+                                </span>
+                              </button>
+
+                              {/* ─ Expanded: full thread ─ */}
+                              {isExpanded && (
+                                <div className='dash-conv-thread'>
+                                  {session.messages.map((msg, idx) => (
+                                    <div
+                                      key={idx}
+                                      className={`dash-conv-msg dash-conv-msg--${msg.role}`}
+                                    >
+                                      <span className='dash-conv-msg__label'>
+                                        {msg.role === 'user'
+                                          ? '👤 Cliente'
+                                          : '🤖 Asistente'}
+                                      </span>
+                                      <p className='dash-conv-msg__text'>
+                                        {msg.content}
+                                      </p>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                           );
                         })}
