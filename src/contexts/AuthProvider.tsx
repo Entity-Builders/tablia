@@ -7,6 +7,7 @@ import {
 } from 'react';
 import type { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
+import { analytics } from '../services/analytics';
 
 interface AuthContextType {
   user: User | null;
@@ -33,6 +34,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+
+      // Identify user for analytics
+      if (session?.user) {
+        analytics.identify(session.user.id, {
+          email: session.user.email,
+        });
+      }
     });
 
     // Listen for auth changes
@@ -42,6 +50,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+
+      if (session?.user) {
+        analytics.identify(session.user.id, { email: session.user.email });
+      } else {
+        analytics.reset();
+      }
     });
 
     return () => subscription.unsubscribe();

@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { lazy, Suspense, useState, useEffect } from 'react';
 import type { MenuCategory, MenuItem } from '../types';
+import { analytics } from '../services/analytics';
 import './MenuView.css';
 
 // Lazy-load chat — Gemini SDK only downloads when user opens chat
@@ -44,12 +45,18 @@ export function MenuView() {
         const { getPublishedMenu } = await import('../services/menu-service');
         const data = await getPublishedMenu(slug);
         setMenuData(data);
-        // Expand all categories by default
         if (data) {
           // Only expand first category by default — less DOM for slow connections
           setExpandedCats(
             new Set(data.categories.length > 0 ? [data.categories[0].id] : []),
           );
+
+          // Track menu page view
+          // PostHog auto-captures: timestamp, device, browser, OS, city (GeoIP)
+          analytics.track('menu_viewed', {
+            slug,
+            venue_name: data.venue.name,
+          });
         }
       } catch {
         // Silently fail — will show "not found" state
@@ -64,10 +71,18 @@ export function MenuView() {
   const toggleCategory = (catId: string) => {
     setExpandedCats((prev) => {
       const next = new Set(prev);
-      if (next.has(catId)) {
-        next.delete(catId);
-      } else {
+      const isExpanding = !next.has(catId);
+      if (isExpanding) {
         next.add(catId);
+        // Track category expansion
+        const cat = menuData?.categories.find((c) => c.id === catId);
+        analytics.track('category_expanded', {
+          slug,
+          category_name: cat?.name,
+          venue_name: menuData?.venue.name,
+        });
+      } else {
+        next.delete(catId);
       }
       return next;
     });
@@ -203,7 +218,16 @@ export function MenuView() {
       {/* Chat FAB */}
       <button
         className={`menu-view__chat-fab ${chatOpen ? 'menu-view__chat-fab--active' : ''}`}
-        onClick={() => setChatOpen(!chatOpen)}
+        onClick={() => {
+          const opening = !chatOpen;
+          setChatOpen(opening);
+          if (opening) {
+            analytics.track('chat_opened', {
+              slug,
+              venue_name: menuData?.venue.name,
+            });
+          }
+        }}
         aria-label='Abrir chat con el menú'
       >
         <MessageCircle size={24} />

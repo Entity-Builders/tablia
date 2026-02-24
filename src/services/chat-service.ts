@@ -1,4 +1,5 @@
 import type { ChatMessage } from '../types';
+import { analytics } from './analytics';
 
 // Lazy-load Gemini SDK — only downloaded when user actually sends a chat message
 let genAI: any = null;
@@ -109,6 +110,13 @@ export async function sendChatMessage(
   contents.push({
     role: 'user' as const,
     parts: [{ text: userMessage }],
+  });
+
+  // Track user question for aggregate insights (top questions, chat usage)
+  analytics.track('chat_message_sent', {
+    venue_name: venueName,
+    message: userMessage,
+    message_position: history.length + 1, // 1st msg, 2nd msg, etc.
   });
 
   const result = await model.generateContent({ contents });

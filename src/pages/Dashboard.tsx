@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useState, useEffect, useCallback } from 'react';
 import { MenuImport } from '../components/MenuImport';
 import { MenuReview } from '../components/MenuReview';
+import { QrModal } from '../components/QrModal';
 import {
   Plus,
   LogOut,
@@ -118,10 +119,13 @@ export function Dashboard() {
   const [editLoading, setEditLoading] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [showQr, setShowQr] = useState(false);
 
   const activeMenu = menus[0] ?? null; // first menu (most recent)
   const isPublished = activeMenu?.status === 'published';
-  const menuUrl = venue ? `${window.location.origin}/m/${venue.slug}` : '';
+  const publicOrigin =
+    import.meta.env.VITE_PUBLIC_URL || window.location.origin;
+  const menuUrl = venue ? `${publicOrigin}/m/${venue.slug}` : '';
 
   const STATUS_LABELS: Record<MenuStatus, { label: string; color: string }> = {
     draft: { label: 'Borrador', color: 'var(--text-muted)' },
@@ -441,6 +445,13 @@ export function Dashboard() {
                         </a>
                         <button
                           className='dash-hero__btn dash-hero__btn--outline'
+                          onClick={() => setShowQr(true)}
+                        >
+                          <QrCode size={16} />
+                          QR
+                        </button>
+                        <button
+                          className='dash-hero__btn dash-hero__btn--outline'
                           onClick={() => handleEditMenu(activeMenu.id)}
                         >
                           <Pencil size={16} />
@@ -664,6 +675,15 @@ export function Dashboard() {
           </div>
         )}
       </main>
+
+      {/* QR Code Modal */}
+      {showQr && venue && (
+        <QrModal
+          url={menuUrl}
+          venueName={venue.name}
+          onClose={() => setShowQr(false)}
+        />
+      )}
     </div>
   );
 }
