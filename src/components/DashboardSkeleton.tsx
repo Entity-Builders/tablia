@@ -1,4 +1,5 @@
 import { UtensilsCrossed } from 'lucide-react';
+import '../pages/Dashboard.css';
 
 export function StatsDashboardSkeleton() {
   return (

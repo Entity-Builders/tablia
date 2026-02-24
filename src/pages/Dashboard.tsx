@@ -130,18 +130,36 @@ export function Dashboard() {
     loadVenues();
   }, [loadVenues]);
 
-  // Load analytics when a published menu is active
+  // Load analytics when a published menu is active.
+  // Note: only show loading skeleton when there is no prior data.
+  // This avoids the flash (StrictMode runs effects twice; on the 2nd run we
+  // already have stale data to display so we should not re-show the skeleton).
   useEffect(() => {
     if (venue && isPublished) {
-      setAnalyticsLoading(true);
-      getVenueAnalytics(venue.slug, venue.name)
-        .then(setAnalyticsData)
-        .catch(() => setAnalyticsData(null))
+      setAnalyticsLoading((prev) => {
+        // Keep loading state only if there's no data yet
+        if (!analyticsData) return true;
+        return prev;
+      });
+
+      const onCached = (cachedData: DashboardAnalytics) => {
+        setAnalyticsData(cachedData);
+        setAnalyticsLoading(false);
+      };
+
+      getVenueAnalytics(venue.slug, venue.name, onCached)
+        .then((freshData) => {
+          setAnalyticsData(freshData);
+        })
+        .catch(() => {
+          // Keep existing data if fetch fails
+        })
         .finally(() => setAnalyticsLoading(false));
     } else {
       setAnalyticsData(null);
+      setAnalyticsLoading(false);
     }
-  }, [venue?.slug, venue?.name, isPublished]);
+  }, [venue?.slug, venue?.name, isPublished]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSignOut = async () => {
     await signOut();

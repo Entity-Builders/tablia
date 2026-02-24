@@ -67,17 +67,32 @@ async function queryHogQL(query: string) {
   return data.results || [];
 }
 
-/**
- * Fetch all analytics data for a specific venue slug.
- */
 export async function getVenueAnalytics(
   slug: string,
   venueName?: string,
+  onCached?: (data: DashboardAnalytics) => void,
 ): Promise<DashboardAnalytics> {
   // If keys aren't configured, always return empty analytics gracefully.
   if (!POSTHOG_API_KEY || !POSTHOG_PROJECT_ID) {
     console.warn('[Analytics] PostHog API keys missing. Showing empty state.');
     return emptyAnalytics;
+  }
+
+  const cacheKey = `tablia_analytics_${slug}`;
+
+  // Try to push cached data instantly for 'stale-while-revalidate' feel
+  if (onCached) {
+    try {
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && parsed.data) {
+          onCached(parsed.data as DashboardAnalytics);
+        }
+      }
+    } catch (e) {
+      console.warn('[Analytics] Cache read error:', e);
+    }
   }
 
   try {
@@ -132,7 +147,7 @@ export async function getVenueAnalytics(
       last7Days.push({ day: espDays[d.getDay()], value: val });
     }
 
-    return {
+    const result: DashboardAnalytics = {
       stats: {
         scansToday: scansTodayRes[0]?.[0] || 0,
         scansWeek: scansWeekRes[0]?.[0] || 0,
@@ -152,6 +167,18 @@ export async function getVenueAnalytics(
           count: row[1],
         })),
     };
+
+    // Save fresh data to local storage
+    try {
+      localStorage.setItem(
+        cacheKey,
+        JSON.stringify({ timestamp: Date.now(), data: result }),
+      );
+    } catch (e) {
+      console.warn('[Analytics] Cache write error:', e);
+    }
+
+    return result;
   } catch (error) {
     console.error('Error fetching PostHog queries:', error);
     // Graceful fallback to zero-data
