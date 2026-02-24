@@ -1,6 +1,7 @@
 /**
  * Scenario: Full published restaurant
- * Creates a complete venue + menu + categories + items, ready to view at /m/:slug
+ * Creates a complete venue + menu + categories + items + chat sessions
+ * ready to view at /m/:slug
  *
  * Usage: yarn workspace tablia seed:restaurant
  */
@@ -11,6 +12,11 @@ import {
   log,
   ensureSeedUser,
 } from '../seed.config';
+import {
+  CONVERSATION_CURIOUS,
+  CONVERSATION_VEGGIE,
+  CONVERSATION_ALLERGY,
+} from '../fixtures/chat.fixtures';
 
 const VENUE_NAME = 'La Parrilla del Centro 🔥';
 const BASE_URL = process.env.VITE_PUBLIC_URL || 'http://localhost:5174';
@@ -113,16 +119,20 @@ export async function seedRestaurantFull() {
     .from('tablia_venues')
     .select('id')
     .eq('slug', SEED_SLUG)
-    .single();
+    .maybeSingle();
 
   if (existingVenue) {
     const { data: existingMenu } = await db
       .from('tablia_menus')
       .select('id')
       .eq('venue_id', existingVenue.id)
-      .single();
+      .maybeSingle();
 
     if (existingMenu) {
+      await db
+        .from('tablia_chat_sessions')
+        .delete()
+        .eq('menu_id', existingMenu.id);
       await db
         .from('tablia_menu_items')
         .delete()
@@ -213,7 +223,42 @@ export async function seedRestaurantFull() {
 
   log.ok(`${CATEGORIES.length} categorías y ${totalItems} ítems creados`);
 
-  // 6. Print result
+  // 6. Seed chat conversations
+  log.info('Creando conversaciones de chat...');
+  const chatSessions = [
+    {
+      menu_id: menu.id,
+      venue_id: venue.id,
+      messages: CONVERSATION_CURIOUS,
+      customer_email: 'grupo@example.com',
+    },
+    {
+      menu_id: menu.id,
+      venue_id: venue.id,
+      messages: CONVERSATION_VEGGIE,
+    },
+    {
+      menu_id: menu.id,
+      venue_id: venue.id,
+      messages: CONVERSATION_ALLERGY,
+      customer_email: 'celiac@example.com',
+    },
+  ];
+
+  const { error: chatError } = await db
+    .from('tablia_chat_sessions')
+    .insert(chatSessions);
+
+  if (chatError) {
+    log.warn(`Chat sessions no insertadas: ${chatError.message}`);
+    log.warn(
+      'Tip: Aplicá la migración con: cd eb-infra && npx supabase migration up',
+    );
+  } else {
+    log.ok(`${chatSessions.length} conversaciones de chat creadas`);
+  }
+
+  // 7. Print result
   const menuUrl = `${BASE_URL}/m/${SEED_SLUG}`;
   console.log('\n' + '─'.repeat(50));
   log.ok('¡Seed completado! 🎉');

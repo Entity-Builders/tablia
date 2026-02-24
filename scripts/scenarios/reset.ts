@@ -1,6 +1,6 @@
 /**
  * Scenario: Reset — wipe all seed data
- * Deletes everything created by the seed scripts.
+ * Deletes ONLY the venue created by the seed scripts (identified by SEED_SLUG).
  *
  * Usage: yarn workspace tablia seed:reset
  */
@@ -8,17 +8,26 @@ import { db, SEED_SLUG, log } from '../seed.config.ts';
 
 export async function seedReset() {
   log.title('🗑  Reset: eliminando datos de seed');
+  log.info(`Buscando venue con slug: "${SEED_SLUG}"`);
 
-  const { data: venue } = await db
+  const { data: venue, error } = await db
     .from('tablia_venues')
-    .select('id')
+    .select('id, slug, name')
     .eq('slug', SEED_SLUG)
-    .single();
+    .maybeSingle();
 
-  if (!venue) {
-    log.warn('No se encontraron datos de seed para eliminar');
+  if (error) {
+    log.error(`Error buscando venue: ${error.message}`);
     return;
   }
+
+  if (!venue) {
+    log.warn(`No se encontró venue con slug "${SEED_SLUG}"`);
+    log.info('Tip: Corré seed:restaurant primero para crear datos de prueba');
+    return;
+  }
+
+  log.info(`Encontrado: "${venue.name}" (${venue.id})`);
 
   const { data: menus } = await db
     .from('tablia_menus')
@@ -27,15 +36,13 @@ export async function seedReset() {
 
   for (const menu of menus || []) {
     await db.from('tablia_menu_items').delete().eq('menu_id', menu.id);
-    log.ok(`Items eliminados (menu: ${menu.id})`);
     await db.from('tablia_menu_categories').delete().eq('menu_id', menu.id);
-    log.ok(`Categorías eliminadas (menu: ${menu.id})`);
     await db.from('tablia_menus').delete().eq('id', menu.id);
     log.ok(`Menú eliminado: ${menu.id}`);
   }
 
   await db.from('tablia_venues').delete().eq('id', venue.id);
-  log.ok(`Venue eliminado: ${venue.id}`);
+  log.ok(`Venue eliminado: "${venue.name}"`);
 
   console.log('\n' + '─'.repeat(50));
   log.ok('Reset completado ✓');

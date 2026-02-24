@@ -33,15 +33,15 @@ async function main() {
 
   try {
     if (isReset) {
-      const { seedReset } = await import('./scenarios/reset.ts');
+      const { seedReset } = await import('./scenarios/reset');
       await seedReset();
     } else if (scenario === 'restaurant-full') {
       const { seedRestaurantFull } =
-        await import('./scenarios/restaurant-full.ts');
+        await import('./scenarios/restaurant-full');
       await seedRestaurantFull();
     } else if (scenario === 'analytics-ready') {
       const { seedAnalyticsReady } =
-        await import('./scenarios/analytics-ready.ts');
+        await import('./scenarios/analytics-ready');
       await seedAnalyticsReady();
     } else {
       console.error(`\x1b[31m  Scenario desconocido: "${scenario}"\x1b[0m`);
