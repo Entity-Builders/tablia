@@ -16,6 +16,17 @@ import {
   CONVERSATION_CURIOUS,
   CONVERSATION_VEGGIE,
   CONVERSATION_ALLERGY,
+  CONVERSATION_PRICES,
+  CONVERSATION_DELIVERY,
+  CONVERSATION_WINE,
+  CONVERSATION_KIDS,
+  CONVERSATION_ENGAGED,
+  CONVERSATION_CUTS,
+  CONVERSATION_PORTIONS,
+  CONVERSATION_COOKING,
+  CONVERSATION_DESSERT,
+  CONVERSATION_CHIMICHURRI,
+  CONVERSATION_MOLLEJA,
 } from '../fixtures/chat.fixtures';
 
 const VENUE_NAME = 'La Parrilla del Centro 🔥';
@@ -29,24 +40,51 @@ const CATEGORIES = [
     items: [
       {
         name: 'Empanadas x6',
-        description: 'Rellenas de carne cortada a cuchillo, jugosas',
+        description:
+          'Rellenas de carne cortada a cuchillo, jugosas y doradas al horno de barro',
         price: 2400,
         currency: 'ARS',
         tags: ['popular'],
       },
       {
         name: 'Provoleta',
-        description: 'Con orégano y tomate cherry',
+        description:
+          'Queso provolone a la parrilla con orégano fresco y tomate cherry',
         price: 1800,
         currency: 'ARS',
         tags: ['vegetariano'],
       },
       {
         name: 'Tabla de fiambres',
-        description: 'Jamón crudo, salame, quesos y pickles',
+        description:
+          'Jamón crudo, salame, quesos estacionados y pickles artesanales',
         price: 3200,
         currency: 'ARS',
         tags: ['para compartir'],
+      },
+      {
+        name: 'Chorizo criollo',
+        description:
+          'Chorizo artesanal a la parrilla servido con chimichurri de la casa',
+        price: 1500,
+        currency: 'ARS',
+        tags: ['popular'],
+      },
+      {
+        name: 'Morcilla con pimientos',
+        description:
+          'Morcilla criolla asada, acompañada de pimientos asados al oliva',
+        price: 1400,
+        currency: 'ARS',
+        tags: [],
+      },
+      {
+        name: 'Ensalada mixta',
+        description:
+          'Lechuga, tomate, cebolla morada, zanahoria rallada y oliva extra virgen',
+        price: 1200,
+        currency: 'ARS',
+        tags: ['vegetariano', 'sin TACC'],
       },
     ],
   },
@@ -57,49 +95,204 @@ const CATEGORIES = [
     items: [
       {
         name: 'Bife de Chorizo 400g',
-        description: 'Punto a elección, con chimichurri de la casa',
+        description:
+          'Punto a elección, servido con chimichurri de la casa y papas fritas rústicas',
         price: 8500,
+        currency: 'ARS',
+        tags: ['popular', 'sin TACC'],
+      },
+      {
+        name: 'Vacío a la parrilla',
+        description:
+          'Cocción lenta de 40 minutos, tierno y jugoso. Viene con ensalada',
+        price: 7200,
+        currency: 'ARS',
+        tags: ['sin TACC'],
+      },
+      {
+        name: 'Costillar de cerdo',
+        description:
+          'Media plancha al carbón con glaseado de miel y mostaza antigua',
+        price: 9800,
+        currency: 'ARS',
+        tags: ['chef recomienda', 'para compartir'],
+      },
+      {
+        name: 'Entraña fina 350g',
+        description:
+          'Corte especial, muy tierno. Solo punto jugoso o a punto. Sin acompañamiento extra',
+        price: 9200,
+        currency: 'ARS',
+        tags: ['chef recomienda', 'sin TACC'],
+      },
+      {
+        name: 'Tira de asado x kg',
+        description:
+          'El clásico. Precio por kilogramo, consultar disponibilidad del día',
+        price: 12000,
+        currency: 'ARS',
+        tags: ['sin TACC'],
+      },
+      {
+        name: 'Pollo a la parrilla',
+        description: 'Medio pollo marinado en limón y hierbas, cocción lenta',
+        price: 5800,
+        currency: 'ARS',
+        tags: ['sin TACC'],
+      },
+      {
+        name: 'Molleja a la parrilla',
+        description:
+          'Mollejas tiernas al carbón, crocantes por fuera. Acompañan bien al bife',
+        price: 4500,
+        currency: 'ARS',
+        tags: [],
+      },
+    ],
+  },
+  {
+    name: 'Acompañamientos',
+    icon: '🥔',
+    sort_order: 2,
+    items: [
+      {
+        name: 'Papas fritas rústicas',
+        description:
+          'Con cáscara, al horno. Crujientes por fuera y suaves por dentro',
+        price: 1400,
+        currency: 'ARS',
+        tags: ['vegetariano', 'sin TACC'],
+      },
+      {
+        name: 'Puré de papas',
+        description: 'Casero, con manteca y nuez moscada',
+        price: 1200,
+        currency: 'ARS',
+        tags: ['vegetariano'],
+      },
+      {
+        name: 'Ensalada de rúcula y parmesano',
+        description:
+          'Rúcula fresca, virutas de parmesano, nueces y vinagreta de miel',
+        price: 1600,
+        currency: 'ARS',
+        tags: ['vegetariano', 'sin TACC'],
+      },
+      {
+        name: 'Vegetales grillados',
+        description:
+          'Zucchini, berenjena, morrones y cebollas a la parrilla con oliva y sal gruesa',
+        price: 1800,
+        currency: 'ARS',
+        tags: ['vegetariano', 'sin TACC'],
+      },
+    ],
+  },
+  {
+    name: 'Postres',
+    icon: '🍮',
+    sort_order: 3,
+    items: [
+      {
+        name: 'Flan casero con dulce de leche',
+        description: 'Elaboración propia, con crema y dulce de leche repostero',
+        price: 1500,
         currency: 'ARS',
         tags: ['popular'],
       },
       {
-        name: 'Vacío a la parrilla',
-        description: 'Cocción lenta, tierno y jugoso',
-        price: 7200,
+        name: 'Mousse de chocolate',
+        description: 'Oscuro y cremoso, servido frío con coulis de frambuesa',
+        price: 1600,
         currency: 'ARS',
-        tags: [],
+        tags: ['vegetariano'],
       },
       {
-        name: 'Costillar de cerdo',
-        description: 'Con glaseado de miel y mostaza',
-        price: 9800,
+        name: 'Tabla de quesos',
+        description:
+          'Brie, reggianito y gruyère con membrillo artesanal y nueces',
+        price: 2800,
         currency: 'ARS',
-        tags: ['chef recomienda'],
+        tags: ['para compartir'],
+      },
+      {
+        name: 'Helado artesanal',
+        description:
+          'Dos bochas a elección: dulce de leche, chocolate, crema o frutilla',
+        price: 1200,
+        currency: 'ARS',
+        tags: ['vegetariano', 'sin TACC'],
       },
     ],
   },
   {
     name: 'Bebidas',
     icon: '🍷',
-    sort_order: 2,
+    sort_order: 4,
     items: [
       {
         name: 'Vino tinto Malbec (copa)',
-        description: 'Mendoza, cosecha 2022',
+        description: 'Mendoza, cosecha 2022 — ideal con carnes rojas',
         price: 1200,
         currency: 'ARS',
         tags: [],
       },
       {
-        name: 'Agua mineral 500ml',
-        price: 600,
+        name: 'Vino tinto Malbec (botella)',
+        description: 'Botella entera, misma etiqueta',
+        price: 5800,
+        currency: 'ARS',
+        tags: ['para compartir'],
+      },
+      {
+        name: 'Torrontés (copa)',
+        description: 'Blanco seco de Salta, perfecto para entradas y provoleta',
+        price: 1100,
         currency: 'ARS',
         tags: [],
       },
       {
+        name: 'Agua mineral 500ml',
+        description: 'Con o sin gas',
+        price: 600,
+        currency: 'ARS',
+        tags: ['sin TACC'],
+      },
+      {
+        name: 'Agua mineral 1L',
+        description: 'Con o sin gas',
+        price: 950,
+        currency: 'ARS',
+        tags: ['sin TACC'],
+      },
+      {
         name: 'Gaseosa',
-        description: 'Coca Cola, Sprite o Fanta',
+        description: 'Coca Cola, Sprite o Fanta — lata 354ml',
         price: 800,
+        currency: 'ARS',
+        tags: [],
+      },
+      {
+        name: 'Limonada natural',
+        description:
+          'Preparada al momento con limón exprimido, azúcar y jengibre. Sin gas',
+        price: 1100,
+        currency: 'ARS',
+        tags: ['vegetariano', 'sin TACC'],
+      },
+      {
+        name: 'Sangría de la casa (jarra)',
+        description:
+          'Malbec, naranja, manzana, canela y un toque de brandy. Para 3-4 personas',
+        price: 4200,
+        currency: 'ARS',
+        tags: ['para compartir'],
+      },
+      {
+        name: 'Cerveza artesanal rubia',
+        description:
+          'Pinta 500ml. Elaboración local, sabor suave y refrescante',
+        price: 1800,
         currency: 'ARS',
         tags: [],
       },
@@ -242,6 +435,65 @@ export async function seedRestaurantFull() {
       venue_id: venue.id,
       messages: CONVERSATION_ALLERGY,
       customer_email: 'celiac@example.com',
+    },
+    {
+      menu_id: menu.id,
+      venue_id: venue.id,
+      messages: CONVERSATION_PRICES,
+      customer_email: 'presupuesto@example.com',
+    },
+    {
+      menu_id: menu.id,
+      venue_id: venue.id,
+      messages: CONVERSATION_DELIVERY,
+    },
+    {
+      menu_id: menu.id,
+      venue_id: venue.id,
+      messages: CONVERSATION_WINE,
+      customer_email: 'sommelier@example.com',
+    },
+    {
+      menu_id: menu.id,
+      venue_id: venue.id,
+      messages: CONVERSATION_KIDS,
+    },
+    {
+      menu_id: menu.id,
+      venue_id: venue.id,
+      messages: CONVERSATION_ENGAGED,
+      customer_email: 'firsttime@example.com',
+    },
+    {
+      menu_id: menu.id,
+      venue_id: venue.id,
+      messages: CONVERSATION_CUTS,
+    },
+    {
+      menu_id: menu.id,
+      venue_id: venue.id,
+      messages: CONVERSATION_PORTIONS,
+    },
+    {
+      menu_id: menu.id,
+      venue_id: venue.id,
+      messages: CONVERSATION_COOKING,
+    },
+    {
+      menu_id: menu.id,
+      venue_id: venue.id,
+      messages: CONVERSATION_DESSERT,
+      customer_email: 'flan@example.com',
+    },
+    {
+      menu_id: menu.id,
+      venue_id: venue.id,
+      messages: CONVERSATION_CHIMICHURRI,
+    },
+    {
+      menu_id: menu.id,
+      venue_id: venue.id,
+      messages: CONVERSATION_MOLLEJA,
     },
   ];
 
