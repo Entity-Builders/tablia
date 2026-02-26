@@ -9,7 +9,11 @@ import {
 import { lazy, Suspense, useState, useEffect } from 'react';
 import type { MenuCategory, MenuItem } from '../types';
 import { analytics } from '../services/analytics';
+import { DemoBanner } from '../components/DemoBanner';
 import './MenuView.css';
+
+const DEMO_SLUG = 'seed-parrilla-dev';
+const DEMO_EMAIL = import.meta.env.VITE_DEMO_EMAIL || 'seed@tablia.dev';
 
 // Lazy-load chat — Gemini SDK only downloads when user opens chat
 const MenuChat = lazy(() =>
@@ -132,8 +136,12 @@ export function MenuView() {
 
   // ─── Menu ─────────────────────────────────────────────────────
 
+  const isDemo = slug === DEMO_SLUG;
+
   return (
     <div className='menu-view'>
+      {/* Demo banner — only shown for the seed demo menu */}
+      {isDemo && <DemoBanner userEmail={DEMO_EMAIL} />}
       {/* Header */}
       <header className='menu-view__header'>
         <div className='menu-view__venue-info'>

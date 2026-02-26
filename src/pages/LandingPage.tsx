@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import {
   UtensilsCrossed,
   QrCode,
@@ -6,11 +7,38 @@ import {
   BarChart3,
   Mail,
   Zap,
+  Loader2,
+  Play,
 } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 import './LandingPage.css';
+
+const DEMO_EMAIL = import.meta.env.VITE_DEMO_EMAIL || 'seed@tablia.dev';
+const DEMO_PASSWORD = import.meta.env.VITE_DEMO_PASSWORD || 'seed-password-dev';
 
 export function LandingPage() {
   const navigate = useNavigate();
+  const [demoLoading, setDemoLoading] = useState(false);
+  const [demoError, setDemoError] = useState<string | null>(null);
+
+  const handleDemoLogin = async () => {
+    setDemoLoading(true);
+    setDemoError(null);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: DEMO_EMAIL,
+        password: DEMO_PASSWORD,
+      });
+      if (error) throw error;
+      // AuthProvider's onAuthStateChange will pick up the session
+      // and the ProtectedRoute will allow access to /dashboard
+      navigate('/dashboard');
+    } catch {
+      setDemoError('No se pudo acceder a la demo. Intentá de nuevo.');
+    } finally {
+      setDemoLoading(false);
+    }
+  };
 
   return (
     <div className='landing'>
@@ -90,6 +118,41 @@ export function LandingPage() {
               Capturá emails de comensales y construí tu base para promos y
               novedades.
             </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Interactive Demo CTA */}
+      <section className='landing__demo-cta'>
+        <div className='landing__demo-cta-inner'>
+          <div className='landing__demo-cta-text'>
+            <h2>Ver el producto antes de registrarte</h2>
+            <p>
+              Accedé a la cuenta demo de <strong>La Parrilla del Centro</strong>{' '}
+              — un restaurante con menú publicado, analytics reales y
+              conversaciones de clientes. Sin tarjeta, sin formularios.
+            </p>
+            {demoError && <p className='landing__demo-error'>{demoError}</p>}
+          </div>
+          <div className='landing__demo-cta-actions'>
+            <button
+              className='landing__demo-btn'
+              onClick={handleDemoLogin}
+              disabled={demoLoading}
+            >
+              {demoLoading ? (
+                <Loader2 size={20} className='landing__demo-spin' />
+              ) : (
+                <Play size={20} />
+              )}
+              {demoLoading ? 'Entrando...' : 'Ver demo en vivo'}
+            </button>
+            <button
+              className='landing__cta-small'
+              onClick={() => navigate('/login')}
+            >
+              Crear mi cuenta
+            </button>
           </div>
         </div>
       </section>

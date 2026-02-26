@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { MenuImport } from '../components/MenuImport';
 import { MenuReview } from '../components/MenuReview';
 import { QrModal } from '../components/QrModal';
+import { DemoBanner } from '../components/DemoBanner';
 import {
   Plus,
   LogOut,
@@ -322,6 +323,7 @@ export function Dashboard() {
 
   return (
     <div className='dashboard'>
+      <DemoBanner userEmail={user?.email} />
       {/* Header */}
       <header className='dashboard__header'>
         <div className='dashboard__logo'>

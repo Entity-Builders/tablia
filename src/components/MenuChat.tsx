@@ -9,6 +9,8 @@ interface MenuChatProps {
   venueName: string;
   categories: (MenuCategory & { items: MenuItem[] })[];
   onClose: () => void;
+  /** When true, hides the close button (used in landing demo) */
+  isDemo?: boolean;
 }
 
 const QUICK_ACTIONS = [
@@ -23,6 +25,7 @@ export function MenuChat({
   venueName,
   categories,
   onClose,
+  isDemo = false,
 }: MenuChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
@@ -105,9 +108,11 @@ export function MenuChat({
           <Sparkles size={16} />
           <h3>Preguntale al menú</h3>
         </div>
-        <button className='menu-chat__close' onClick={onClose}>
-          <X size={18} />
-        </button>
+        {!isDemo && (
+          <button className='menu-chat__close' onClick={onClose}>
+            <X size={18} />
+          </button>
+        )}
       </div>
 
       {/* Messages */}
