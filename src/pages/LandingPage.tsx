@@ -65,7 +65,10 @@ export function LandingPage() {
             Importá tu menú QR actual y potencialo con un asistente IA,
             analytics y CRM. Sin migrar nada.
           </p>
-          <button className='landing__cta' onClick={() => navigate('/login')}>
+          <button
+            className='landing__cta'
+            onClick={() => navigate('/login?mode=register')}
+          >
             <Zap size={20} />
             Empezá gratis
           </button>
@@ -149,7 +152,7 @@ export function LandingPage() {
             </button>
             <button
               className='landing__cta-small'
-              onClick={() => navigate('/login')}
+              onClick={() => navigate('/login?mode=register')}
             >
               Crear mi cuenta
             </button>

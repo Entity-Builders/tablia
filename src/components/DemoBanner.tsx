@@ -1,4 +1,3 @@
-import { useNavigate } from 'react-router-dom';
 import { Sparkles, X } from 'lucide-react';
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
@@ -11,16 +10,16 @@ interface DemoBannerProps {
 }
 
 export function DemoBanner({ userEmail }: DemoBannerProps) {
-  const navigate = useNavigate();
   const [dismissed, setDismissed] = useState(false);
 
   // Only show banner for demo account user
   if (dismissed || userEmail !== DEMO_EMAIL) return null;
 
   const handleSignUp = async () => {
-    // Sign out the demo user first, then go to login/register
+    // Navigate first via hard redirect so ProtectedRoute's <Navigate to="/login">
+    // can't race and override our ?mode=register param, then sign out.
+    window.location.href = '/login?mode=register';
     await supabase.auth.signOut();
-    navigate('/login');
   };
 
   return (

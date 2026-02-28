@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthProvider';
 import { supabase } from '../lib/supabase';
 import { Auth } from '@supabase/auth-ui-react';
@@ -10,6 +10,9 @@ import './LoginPage.css';
 export function LoginPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const defaultView =
+    searchParams.get('mode') === 'register' ? 'sign_up' : 'sign_in';
 
   useEffect(() => {
     if (user) {
@@ -28,6 +31,7 @@ export function LoginPage() {
           <p className='login__tagline'>Tu menú, potenciado</p>
         </div>
         <Auth
+          view={defaultView}
           supabaseClient={supabase}
           appearance={{
             theme: ThemeSupa,
