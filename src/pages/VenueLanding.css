@@ -1,0 +1,267 @@
+/* ─── Venue Landing Page ─────────────────────────────────────── */
+/* Linktree-style page shown when scanning QR, before the menu    */
+
+.venue-landing {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: linear-gradient(
+    168deg,
+    var(--bg-primary) 0%,
+    #f5f0e8 40%,
+    #ede6d8 100%
+  );
+  padding: 2rem 1.25rem;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Decorative background glow */
+.venue-landing::before {
+  content: '';
+  position: absolute;
+  top: -80px;
+  right: -80px;
+  width: 260px;
+  height: 260px;
+  background: radial-gradient(
+    circle,
+    rgba(var(--accent-rgb), 0.12) 0%,
+    transparent 70%
+  );
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* ─── Loading ────────────────────────────────────────────────── */
+
+.venue-landing__loading {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ─── Logo / Avatar ──────────────────────────────────────────── */
+
+.venue-landing__avatar {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  overflow: hidden;
+  margin-bottom: 1rem;
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.08),
+    0 0 0 3px rgba(var(--accent-rgb), 0.15);
+  animation: landingFadeIn 0.5s ease both;
+  flex-shrink: 0;
+}
+
+.venue-landing__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.venue-landing__avatar-fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent);
+  color: #fff;
+  font-family: 'Outfit', sans-serif;
+  font-size: 2.5rem;
+  font-weight: 700;
+}
+
+/* ─── Venue Info ─────────────────────────────────────────────── */
+
+.venue-landing__info {
+  text-align: center;
+  margin-bottom: 2rem;
+  animation: landingFadeIn 0.5s ease 0.1s both;
+}
+
+.venue-landing__name {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+}
+
+.venue-landing__cuisine {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+/* ─── Links Container ────────────────────────────────────────── */
+
+.venue-landing__links {
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* ─── Link Button (base) ─────────────────────────────────────── */
+
+.venue-landing__link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.9rem 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: var(--text-primary);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.25s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.venue-landing__link:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+  border-color: rgba(var(--accent-rgb), 0.3);
+  text-decoration: none;
+}
+
+.venue-landing__link:active {
+  transform: translateY(0);
+}
+
+/* Primary link (Ver Menú) */
+.venue-landing__link--primary {
+  background: var(--accent);
+  color: #fff;
+  border-color: transparent;
+  font-weight: 600;
+  font-size: 1rem;
+  padding: 1rem 1.25rem;
+  box-shadow: 0 4px 20px rgba(var(--accent-rgb), 0.3);
+}
+
+.venue-landing__link--primary:hover {
+  background: var(--accent-dark);
+  box-shadow: 0 6px 28px rgba(var(--accent-rgb), 0.4);
+  border-color: transparent;
+}
+
+/* ─── Link Icon ──────────────────────────────────────────────── */
+
+.venue-landing__link-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  background: rgba(var(--accent-rgb), 0.08);
+  color: var(--accent-dark);
+}
+
+.venue-landing__link--primary .venue-landing__link-icon {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+/* ─── Wi-Fi Card ─────────────────────────────────────────────── */
+
+.venue-landing__wifi {
+  cursor: default;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.venue-landing__wifi-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.venue-landing__wifi-details {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  background: rgba(var(--accent-rgb), 0.04);
+  border-radius: var(--radius-sm);
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+}
+
+/* ─── Footer ─────────────────────────────────────────────────── */
+
+.venue-landing__footer {
+  margin-top: auto;
+  padding-top: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  animation: landingFadeIn 0.5s ease 0.6s both;
+}
+
+/* ─── Staggered Animations ───────────────────────────────────── */
+
+@keyframes landingFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.venue-landing__link:nth-child(1) { animation: landingFadeIn 0.4s ease 0.15s both; }
+.venue-landing__link:nth-child(2) { animation: landingFadeIn 0.4s ease 0.22s both; }
+.venue-landing__link:nth-child(3) { animation: landingFadeIn 0.4s ease 0.29s both; }
+.venue-landing__link:nth-child(4) { animation: landingFadeIn 0.4s ease 0.36s both; }
+.venue-landing__link:nth-child(5) { animation: landingFadeIn 0.4s ease 0.43s both; }
+.venue-landing__link:nth-child(6) { animation: landingFadeIn 0.4s ease 0.50s both; }
+
+/* ─── Crossfade transition to menu ───────────────────────────── */
+
+.venue-landing--exit {
+  animation: landingExit 0.3s ease forwards;
+}
+
+@keyframes landingExit {
+  to {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+
+/* ─── Not Found ──────────────────────────────────────────────── */
+
+.venue-landing__not-found {
+  text-align: center;
+  padding: 4rem 1rem;
+  color: var(--text-secondary);
+}
+
+.venue-landing__not-found h1 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.5rem;
+  margin: 1rem 0 0.5rem;
+  color: var(--text-primary);
+}

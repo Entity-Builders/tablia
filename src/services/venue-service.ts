@@ -74,3 +74,45 @@ export async function getVenueBySlug(slug: string): Promise<Venue | null> {
   if (error) return null;
   return data as Venue;
 }
+
+/**
+ * Lightweight venue fetch for the public Landing page.
+ * Only fetches the fields needed to render the landing (no menu data).
+ */
+export async function getVenueLanding(slug: string): Promise<{
+  name: string;
+  slug: string;
+  logo_url: string | null;
+  cuisine_type: string | null;
+  landing_links: import('../types').LandingLink[];
+} | null> {
+  const { data, error } = await supabase
+    .from('tablia_venues')
+    .select('name, slug, logo_url, cuisine_type, landing_links')
+    .eq('slug', slug)
+    .single();
+
+  if (error) return null;
+  return {
+    ...(data as any),
+    landing_links: (data as any).landing_links ?? [],
+  };
+}
+
+/**
+ * Update venue landing links from the Dashboard editor.
+ */
+export async function updateVenueLandingLinks(
+  venueId: string,
+  links: import('../types').LandingLink[],
+): Promise<void> {
+  const { error } = await supabase
+    .from('tablia_venues')
+    .update({
+      landing_links: links as unknown as Record<string, unknown>[],
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', venueId);
+
+  if (error) throw new Error(error.message);
+}

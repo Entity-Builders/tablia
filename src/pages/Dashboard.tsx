@@ -5,6 +5,7 @@ import { MenuImport } from '../components/MenuImport';
 import { MenuReview } from '../components/MenuReview';
 import { QrModal } from '../components/QrModal';
 import { DemoBanner } from '../components/DemoBanner';
+import { LandingLinksEditor } from '../components/LandingLinksEditor';
 import {
   Plus,
   LogOut,
@@ -494,6 +495,14 @@ export function Dashboard() {
                   </button>
                 )}
               </div>
+            </section>
+
+            {/* ─── Landing Links Editor ────────────────────── */}
+            <section className='dash-card dash-card--full' style={{ marginBottom: '1rem' }}>
+              <LandingLinksEditor
+                venueId={venue.id}
+                initialLinks={venue.landing_links ?? []}
+              />
             </section>
 
             {/* Show analytics only if menu exists */}

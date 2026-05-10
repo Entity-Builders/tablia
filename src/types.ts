@@ -1,5 +1,31 @@
 // ─── Tablia Types ───────────────────────────────────────────────
 
+// ─── Landing Links ──────────────────────────────────────────────
+
+export type LandingLinkType = 'menu' | 'wifi' | 'url' | 'phone' | 'whatsapp';
+export type LandingLinkIcon =
+  | 'instagram'
+  | 'facebook'
+  | 'tiktok'
+  | 'twitter'
+  | 'calendar'
+  | 'star'
+  | 'phone'
+  | 'wifi'
+  | 'globe'
+  | 'map-pin'
+  | 'mail'
+  | 'whatsapp';
+
+export interface LandingLink {
+  type: LandingLinkType;
+  label: string;
+  url?: string; // for 'url', 'phone', 'whatsapp' types
+  value?: string; // for 'wifi' (password)
+  icon?: LandingLinkIcon;
+  isPrimary?: boolean; // "Ver Menú" button — visually prominent
+}
+
 // ─── Venue (Restaurant/Bar) ─────────────────────────────────────
 
 export interface Venue {
@@ -11,6 +37,7 @@ export interface Venue {
   logo_url?: string;
   address?: string;
   cuisine_type?: string;
+  landing_links?: LandingLink[];
   created_at: string;
   updated_at: string;
 }

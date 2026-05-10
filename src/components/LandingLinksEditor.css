@@ -1,0 +1,272 @@
+/* ─── Landing Links Editor ───────────────────────────────────── */
+
+.landing-editor {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.landing-editor__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.landing-editor__header h3 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.landing-editor__header-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* ─── Link List ──────────────────────────────────────────────── */
+
+.landing-editor__list {
+  padding: 0.75rem;
+}
+
+.landing-editor__item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 0.75rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  margin-bottom: 0.5rem;
+  transition: background 0.15s;
+}
+
+.landing-editor__item:last-child {
+  margin-bottom: 0;
+}
+
+.landing-editor__item:hover {
+  background: var(--bg-hover);
+}
+
+.landing-editor__item-icon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  background: rgba(var(--accent-rgb), 0.08);
+  color: var(--accent-dark);
+  flex-shrink: 0;
+}
+
+.landing-editor__item--primary .landing-editor__item-icon {
+  background: var(--accent);
+  color: #fff;
+}
+
+.landing-editor__item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.landing-editor__item-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.landing-editor__item-detail {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.landing-editor__item-actions {
+  display: flex;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+.landing-editor__item-btn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.15s;
+}
+
+.landing-editor__item-btn:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.landing-editor__item-btn--danger:hover {
+  background: rgba(239, 68, 68, 0.08);
+  color: var(--error);
+}
+
+/* ─── Add Button ─────────────────────────────────────────────── */
+
+.landing-editor__add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.75rem;
+  margin-top: 0.5rem;
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.landing-editor__add:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(var(--accent-rgb), 0.03);
+}
+
+/* ─── Empty State ────────────────────────────────────────────── */
+
+.landing-editor__empty {
+  text-align: center;
+  padding: 2rem 1rem;
+  color: var(--text-muted);
+}
+
+.landing-editor__empty p {
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+/* ─── Save Bar ───────────────────────────────────────────────── */
+
+.landing-editor__save-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  border-top: 1px solid var(--border);
+  background: var(--bg-secondary);
+}
+
+.landing-editor__save-btn {
+  padding: 0.5rem 1.25rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.landing-editor__save-btn:hover {
+  background: var(--accent-dark);
+}
+
+.landing-editor__save-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.landing-editor__saved-msg {
+  font-size: 0.8rem;
+  color: var(--success);
+  font-weight: 500;
+}
+
+/* ─── Form Modal ─────────────────────────────────────────────── */
+
+.landing-editor__form {
+  padding: 1rem 1.25rem;
+  border-top: 1px solid var(--border);
+  background: var(--bg-secondary);
+}
+
+.landing-editor__form-row {
+  margin-bottom: 0.75rem;
+}
+
+.landing-editor__form-row label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.landing-editor__form-row input,
+.landing-editor__form-row select {
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.88rem;
+  font-family: inherit;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.landing-editor__form-row input:focus,
+.landing-editor__form-row select:focus {
+  border-color: var(--accent);
+}
+
+.landing-editor__form-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.landing-editor__form-btn {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.landing-editor__form-btn:hover {
+  background: var(--bg-hover);
+}
+
+.landing-editor__form-btn--primary {
+  background: var(--accent);
+  color: #fff;
+  border-color: transparent;
+}
+
+.landing-editor__form-btn--primary:hover {
+  background: var(--accent-dark);
+}

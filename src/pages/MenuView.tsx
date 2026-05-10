@@ -32,16 +32,43 @@ interface MenuData {
 
 /**
  * MenuView — Public page that comensales see when scanning a QR.
- * Route: /m/:slug
+ * Can be rendered from VenueLanding (with prefetched data) or directly via URL.
  */
-export function MenuView() {
-  const { slug } = useParams();
+
+interface MenuViewProps {
+  prefetchedData?: MenuData | null;
+  slug?: string;
+}
+
+export function MenuView({ prefetchedData, slug: slugProp }: MenuViewProps = {}) {
+  const params = useParams();
+  const slug = slugProp || params.slug;
   const [chatOpen, setChatOpen] = useState(false);
-  const [menuData, setMenuData] = useState<MenuData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [menuData, setMenuData] = useState<MenuData | null>(
+    prefetchedData ?? null,
+  );
+  const [loading, setLoading] = useState(!prefetchedData);
   const [expandedCats, setExpandedCats] = useState<Set<string>>(new Set());
 
   useEffect(() => {
+    // If we already have prefetched data, just set up the initial expanded category
+    if (prefetchedData) {
+      setExpandedCats(
+        new Set(
+          prefetchedData.categories.length > 0
+            ? [prefetchedData.categories[0].id]
+            : [],
+        ),
+      );
+      analytics.track('menu_viewed', {
+        slug,
+        venue_name: prefetchedData.venue.name,
+        prefetched: true,
+      });
+      return;
+    }
+
+    // Otherwise fetch from scratch (direct URL access)
     if (!slug) return;
 
     const load = async () => {
@@ -70,7 +97,7 @@ export function MenuView() {
     };
 
     load();
-  }, [slug]);
+  }, [slug]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const toggleCategory = (catId: string) => {
     setExpandedCats((prev) => {

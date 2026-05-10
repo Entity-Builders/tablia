@@ -14,8 +14,8 @@ const LoginPage = lazy(() =>
 const Dashboard = lazy(() =>
   import('./pages/Dashboard').then((m) => ({ default: m.Dashboard })),
 );
-const MenuView = lazy(() =>
-  import('./pages/MenuView').then((m) => ({ default: m.MenuView })),
+const VenueLanding = lazy(() =>
+  import('./pages/VenueLanding').then((m) => ({ default: m.VenueLanding })),
 );
 
 function AppFallback() {
@@ -39,7 +39,7 @@ function App() {
               {/* Public routes */}
               <Route path='/' element={<LandingPage />} />
               <Route path='/login' element={<LoginPage />} />
-              <Route path='/m/:slug' element={<MenuView />} />
+              <Route path='/m/:slug' element={<VenueLanding />} />
 
               {/* Protected routes (restaurantero) */}
               <Route
