@@ -6,7 +6,11 @@ export default defineConfig({
   plugins: [react()],
   publicDir: 'public',
   server: {
-    port: 5174,
-    allowedHosts: true,
+    host: 'tablia.local',
+    port: 3002,
+    allowedHosts: ['tablia.local'],
+    cors: {
+      origin: ['http://tablia.local:3002'],
+    },
   },
 });
