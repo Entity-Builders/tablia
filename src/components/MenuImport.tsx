@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import type { ParsedMenu } from '../types';
+import type { ParsedMenu, ParsedContactInfo, LandingLink } from '../types';
 import { MenuReview } from './MenuReview';
+import { LandingSetupStep } from './LandingSetupStep';
 import {
   SUPPORTED_FILE_TYPES,
   MAX_FILE_SIZE,
@@ -18,7 +19,7 @@ import {
 } from 'lucide-react';
 import './MenuImport.css';
 
-type ImportStep = 'input' | 'parsing' | 'review' | 'done';
+type ImportStep = 'input' | 'parsing' | 'review' | 'landing-setup' | 'done';
 type InputMode = 'file' | 'text';
 
 const PARSING_MESSAGES = [
@@ -26,6 +27,7 @@ const PARSING_MESSAGES = [
   'Identificando secciones y categorías…',
   'Extrayendo platos y precios…',
   'Detectando etiquetas dietarias…',
+  'Buscando datos de contacto…',
   'Organizando la estructura…',
   'Casi listo, últimos ajustes…',
 ];
@@ -62,6 +64,11 @@ export function MenuImport({
   const [isDragOver, setIsDragOver] = useState(false);
   const [loadingMsgIdx, setLoadingMsgIdx] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Landing setup state
+  const [contactInfo, setContactInfo] = useState<ParsedContactInfo>({});
+  const [enriching, setEnriching] = useState(false);
+  const enrichStarted = useRef(false);
 
   // Cycle loading messages while parsing
   useEffect(() => {
@@ -161,6 +168,35 @@ export function MenuImport({
     }
   };
 
+  // Start enrichment in background when we enter the review step
+  useEffect(() => {
+    if (step !== 'review' || enrichStarted.current || !parsedMenu) return;
+    enrichStarted.current = true;
+
+    const restaurantName = parsedMenu.metadata?.restaurant_name;
+    if (!restaurantName) return;
+
+    const pdfContact = parsedMenu.contact_info ?? {};
+    setContactInfo(pdfContact);
+    setEnriching(true);
+
+    const runEnrichment = async () => {
+      try {
+        const { enrichVenueFromWeb } = await import(
+          '../services/venue-enrichment-service'
+        );
+        const enriched = await enrichVenueFromWeb(restaurantName, pdfContact);
+        setContactInfo(enriched);
+      } catch {
+        // Enrichment failed — use PDF-only data
+      } finally {
+        setEnriching(false);
+      }
+    };
+
+    runEnrichment();
+  }, [step, parsedMenu]);
+
   const handleConfirm = async (editedMenu: ParsedMenu) => {
     if (!menuId) return;
     setError(null);
@@ -168,10 +204,39 @@ export function MenuImport({
     try {
       const { confirmParsedMenu } = await import('../services/menu-service');
       await confirmParsedMenu(menuId, editedMenu);
-      setStep('done');
+
+      // If we have any contact info (from PDF or enrichment), show landing setup
+      const hasContactData = Object.values(contactInfo).some(
+        (v) => v !== undefined && v !== null && v !== '',
+      );
+
+      if (hasContactData || enriching) {
+        setStep('landing-setup');
+      } else {
+        setStep('done');
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al guardar el menú');
     }
+  };
+
+  // ─── Landing setup handlers ─────────────────────────────────────
+
+  const handleLandingConfirm = async (links: LandingLink[]) => {
+    try {
+      const { updateVenueLandingLinks } = await import(
+        '../services/venue-service'
+      );
+      await updateVenueLandingLinks(venueId, links);
+    } catch {
+      // Non-critical — user can configure later from dashboard
+      console.warn('[MenuImport] Failed to save landing links');
+    }
+    setStep('done');
+  };
+
+  const handleLandingSkip = () => {
+    setStep('done');
   };
 
   // ─── Step: Input ──────────────────────────────────────────────
@@ -369,6 +434,33 @@ export function MenuImport({
         )}
 
         <MenuReview parsedMenu={parsedMenu} onConfirm={handleConfirm} />
+      </div>
+    );
+  }
+
+  // ─── Step: Landing Setup ──────────────────────────────────────
+
+  if (step === 'landing-setup') {
+    return (
+      <div className='menu-import'>
+        <div className='menu-import__header'>
+          <button
+            className='menu-import__back'
+            onClick={() => setStep('review')}
+          >
+            <ArrowLeft size={20} />
+          </button>
+          <h2>Tu Landing Page</h2>
+        </div>
+
+        <div className='menu-import__body'>
+          <LandingSetupStep
+            contactInfo={contactInfo}
+            enriching={enriching}
+            onConfirm={handleLandingConfirm}
+            onSkip={handleLandingSkip}
+          />
+        </div>
       </div>
     );
   }

@@ -13,6 +13,12 @@ REGLAS:
 - Si un plato tiene variantes (tamaños, sabores), crea un item por variante
 - Mantén el idioma original del menú
 - Si detectás el nombre del restaurante o tipo de cocina, incluyelo en metadata
+- IMPORTANTE: Buscá también información de contacto en el menú (header, footer, márgenes, marcas de agua):
+  - Teléfono, WhatsApp, dirección física
+  - Redes sociales (Instagram, Facebook, TikTok)
+  - Website, email
+  - Nombre y clave de Wi-Fi (algunos restaurantes lo incluyen en la carta)
+  - Si no encontrás alguno de estos datos, dejá el campo como null
 
 FORMATO DE RESPUESTA (JSON):
 {
@@ -35,6 +41,17 @@ FORMATO DE RESPUESTA (JSON):
     "restaurant_name": "Nombre si se detecta",
     "cuisine_type": "Tipo de cocina si se infiere",
     "confidence": 0.95
+  },
+  "contact_info": {
+    "phone": "+5491112345678 o null",
+    "address": "Dirección física o null",
+    "instagram": "@handle sin URL completa o null",
+    "facebook": "nombre de página o null",
+    "tiktok": "@handle o null",
+    "website": "URL completa o null",
+    "wifi_name": "Nombre de la red o null",
+    "wifi_password": "Clave del wifi o null",
+    "whatsapp": "Número de WhatsApp o null"
   }
 }`;
 

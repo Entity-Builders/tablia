@@ -1,0 +1,246 @@
+/* ─── Landing Setup Step ─────────────────────────────────────── */
+/* Onboarding step shown after menu review to configure landing    */
+
+.landing-setup {
+  padding: 1rem 0;
+}
+
+.landing-setup__intro {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  animation: lsIntro 0.4s ease both;
+}
+
+.landing-setup__intro-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 0.75rem;
+  background: rgba(var(--accent-rgb), 0.08);
+  border-radius: 50%;
+  color: var(--accent-dark);
+}
+
+.landing-setup__intro h3 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-bottom: 0.35rem;
+}
+
+.landing-setup__intro p {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  max-width: 380px;
+  margin: 0 auto;
+  line-height: 1.45;
+}
+
+/* ─── Toggle Cards ───────────────────────────────────────────── */
+
+.landing-setup__cards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.landing-setup__card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.landing-setup__card:hover {
+  border-color: rgba(var(--accent-rgb), 0.3);
+  background: var(--bg-hover);
+}
+
+.landing-setup__card--active {
+  border-color: var(--accent);
+  background: rgba(var(--accent-rgb), 0.04);
+}
+
+.landing-setup__card--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Card icon */
+.landing-setup__card-icon {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  background: rgba(var(--accent-rgb), 0.08);
+  color: var(--accent-dark);
+  flex-shrink: 0;
+}
+
+.landing-setup__card--active .landing-setup__card-icon {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* Card info */
+.landing-setup__card-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.landing-setup__card-label {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.landing-setup__card-value {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Toggle switch */
+.landing-setup__toggle {
+  position: relative;
+  width: 40px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+.landing-setup__toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.landing-setup__toggle-track {
+  position: absolute;
+  inset: 0;
+  background: var(--border);
+  border-radius: 11px;
+  transition: background 0.2s ease;
+}
+
+.landing-setup__toggle input:checked + .landing-setup__toggle-track {
+  background: var(--accent);
+}
+
+.landing-setup__toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  transition: transform 0.2s ease;
+}
+
+.landing-setup__toggle input:checked ~ .landing-setup__toggle-thumb {
+  transform: translateX(18px);
+}
+
+/* ─── Enrichment loading ─────────────────────────────────────── */
+
+.landing-setup__enriching {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  background: rgba(var(--accent-rgb), 0.04);
+  border: 1px dashed rgba(var(--accent-rgb), 0.2);
+  border-radius: var(--radius-sm);
+  margin-bottom: 1rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.landing-setup__enriching svg {
+  animation: spin 1s linear infinite;
+}
+
+/* ─── Empty state ────────────────────────────────────────────── */
+
+.landing-setup__empty {
+  text-align: center;
+  padding: 1.5rem 1rem;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+/* ─── Actions ────────────────────────────────────────────────── */
+
+.landing-setup__actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+.landing-setup__btn {
+  padding: 0.6rem 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.landing-setup__btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.landing-setup__btn--primary {
+  background: var(--accent);
+  color: #fff;
+  border-color: transparent;
+  font-weight: 600;
+}
+
+.landing-setup__btn--primary:hover {
+  background: var(--accent-dark);
+}
+
+.landing-setup__btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ─── Staggered card animations ──────────────────────────────── */
+
+@keyframes lsIntro {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.landing-setup__card:nth-child(1) { animation: lsIntro 0.3s ease 0.05s both; }
+.landing-setup__card:nth-child(2) { animation: lsIntro 0.3s ease 0.10s both; }
+.landing-setup__card:nth-child(3) { animation: lsIntro 0.3s ease 0.15s both; }
+.landing-setup__card:nth-child(4) { animation: lsIntro 0.3s ease 0.20s both; }
+.landing-setup__card:nth-child(5) { animation: lsIntro 0.3s ease 0.25s both; }
+.landing-setup__card:nth-child(6) { animation: lsIntro 0.3s ease 0.30s both; }
+.landing-setup__card:nth-child(7) { animation: lsIntro 0.3s ease 0.35s both; }
+.landing-setup__card:nth-child(8) { animation: lsIntro 0.3s ease 0.40s both; }
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

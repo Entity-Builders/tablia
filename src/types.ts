@@ -151,6 +151,18 @@ export interface Customer {
 
 // ─── Menu Parsing (AI Import) ───────────────────────────────────
 
+export interface ParsedContactInfo {
+  phone?: string;
+  address?: string;
+  instagram?: string;
+  facebook?: string;
+  tiktok?: string;
+  website?: string;
+  wifi_name?: string;
+  wifi_password?: string;
+  whatsapp?: string;
+}
+
 export interface ParsedMenu {
   categories: {
     name: string;
@@ -168,4 +180,5 @@ export interface ParsedMenu {
     cuisine_type?: string;
     confidence: number; // 0-1 parsing confidence score
   };
+  contact_info?: ParsedContactInfo;
 }
