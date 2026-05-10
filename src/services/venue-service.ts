@@ -17,11 +17,11 @@ export async function createVenue(data: {
 
   // Ensure profile exists
   await supabase
-    .from('tablia_profiles')
+    .from('profiles')
     .upsert({ id: user.id }, { onConflict: 'id' });
 
   const { data: venue, error } = await supabase
-    .from('tablia_venues')
+    .from('venues')
     .insert({
       owner_id: user.id,
       name: data.name,
@@ -52,7 +52,7 @@ export async function getMyVenues(): Promise<Venue[]> {
   if (!user) return [];
 
   const { data, error } = await supabase
-    .from('tablia_venues')
+    .from('venues')
     .select('*')
     .eq('owner_id', user.id)
     .order('created_at', { ascending: false });
@@ -66,7 +66,7 @@ export async function getMyVenues(): Promise<Venue[]> {
  */
 export async function getVenueBySlug(slug: string): Promise<Venue | null> {
   const { data, error } = await supabase
-    .from('tablia_venues')
+    .from('venues')
     .select('*')
     .eq('slug', slug)
     .single();
@@ -87,7 +87,7 @@ export async function getVenueLanding(slug: string): Promise<{
   landing_links: import('../types').LandingLink[];
 } | null> {
   const { data, error } = await supabase
-    .from('tablia_venues')
+    .from('venues')
     .select('name, slug, logo_url, cuisine_type, landing_links')
     .eq('slug', slug)
     .single();
@@ -107,7 +107,7 @@ export async function updateVenueLandingLinks(
   links: import('../types').LandingLink[],
 ): Promise<void> {
   const { error } = await supabase
-    .from('tablia_venues')
+    .from('venues')
     .update({
       landing_links: links as unknown as Record<string, unknown>[],
       updated_at: new Date().toISOString(),

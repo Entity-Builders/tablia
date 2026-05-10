@@ -8,7 +8,7 @@ import { analytics } from './analytics';
 export async function getChatSessions(venueId: string): Promise<ChatSession[]> {
   const { supabase } = await import('../lib/supabase');
   const { data, error } = await supabase
-    .from('tablia_chat_sessions')
+    .from('chat_sessions')
     .select('*')
     .eq('venue_id', venueId)
     .order('created_at', { ascending: false })
@@ -34,7 +34,7 @@ export async function saveChatSession(
   if (sessionId) {
     // Update existing session
     await supabase
-      .from('tablia_chat_sessions')
+      .from('chat_sessions')
       .update({ messages, updated_at: new Date().toISOString() })
       .eq('id', sessionId);
     return sessionId;
@@ -42,7 +42,7 @@ export async function saveChatSession(
 
   // Create new session
   const { data, error } = await supabase
-    .from('tablia_chat_sessions')
+    .from('chat_sessions')
     .insert({ menu_id: menuId, venue_id: venueId, messages, customer_email: customerEmail || null })
     .select('id')
     .single();

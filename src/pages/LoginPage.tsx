@@ -32,7 +32,7 @@ export function LoginPage() {
         </div>
         <Auth
           view={defaultView}
-          supabaseClient={supabase}
+          supabaseClient={supabase as any}
           appearance={{
             theme: ThemeSupa,
             variables: {

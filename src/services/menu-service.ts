@@ -26,7 +26,7 @@ export async function createMenuFromText(
 ): Promise<{ menu: Menu; parsed: ParsedMenu }> {
   // 0. Guard: only 1 menu per venue
   const { count, error: countError } = await supabase
-    .from('tablia_menus')
+    .from('menus')
     .select('id', { count: 'exact', head: true })
     .eq('venue_id', venueId);
 
@@ -39,7 +39,7 @@ export async function createMenuFromText(
 
   // 1. Create menu record in 'parsing' state
   const { data: menu, error: menuError } = await supabase
-    .from('tablia_menus')
+    .from('menus')
     .insert({
       venue_id: venueId,
       name: name || 'Menú Principal',
@@ -58,7 +58,7 @@ export async function createMenuFromText(
 
     // 3. Update menu with parsed result, set status to 'review'
     const { data: updatedMenu, error: updateError } = await supabase
-      .from('tablia_menus')
+      .from('menus')
       .update({
         parsed_json: parsed as unknown as Record<string, unknown>,
         status: 'review',
@@ -75,7 +75,7 @@ export async function createMenuFromText(
   } catch (error) {
     // If parsing fails, set status back to draft
     await supabase
-      .from('tablia_menus')
+      .from('menus')
       .update({ status: 'draft' })
       .eq('id', menu.id);
 
@@ -94,7 +94,7 @@ export async function createMenuFromFile(
 ): Promise<{ menu: Menu; parsed: ParsedMenu }> {
   // 0. Guard: only 1 menu per venue
   const { count, error: countError } = await supabase
-    .from('tablia_menus')
+    .from('menus')
     .select('id', { count: 'exact', head: true })
     .eq('venue_id', venueId);
 
@@ -109,7 +109,7 @@ export async function createMenuFromFile(
 
   // 1. Create menu record in 'parsing' state
   const { data: menu, error: menuError } = await supabase
-    .from('tablia_menus')
+    .from('menus')
     .insert({
       venue_id: venueId,
       name: name || 'Menú Principal',
@@ -128,7 +128,7 @@ export async function createMenuFromFile(
 
     // 3. Update menu with parsed result, set status to 'review'
     const { data: updatedMenu, error: updateError } = await supabase
-      .from('tablia_menus')
+      .from('menus')
       .update({
         parsed_json: parsed as unknown as Record<string, unknown>,
         status: 'review',
@@ -145,7 +145,7 @@ export async function createMenuFromFile(
   } catch (error) {
     // If parsing fails, set status back to draft
     await supabase
-      .from('tablia_menus')
+      .from('menus')
       .update({ status: 'draft' })
       .eq('id', menu.id);
 
@@ -162,15 +162,15 @@ export async function confirmParsedMenu(
   parsedMenu: ParsedMenu,
 ): Promise<void> {
   // 1. Delete any existing categories/items for this menu (in case of re-parse)
-  await supabase.from('tablia_menu_items').delete().eq('menu_id', menuId);
-  await supabase.from('tablia_menu_categories').delete().eq('menu_id', menuId);
+  await supabase.from('menu_items').delete().eq('menu_id', menuId);
+  await supabase.from('menu_categories').delete().eq('menu_id', menuId);
 
   // 2. Insert categories and items
   for (let catIndex = 0; catIndex < parsedMenu.categories.length; catIndex++) {
     const cat = parsedMenu.categories[catIndex];
 
     const { data: category, error: catError } = await supabase
-      .from('tablia_menu_categories')
+      .from('menu_categories')
       .insert({
         menu_id: menuId,
         name: cat.name,
@@ -199,7 +199,7 @@ export async function confirmParsedMenu(
 
     if (items.length > 0) {
       const { error: itemsError } = await supabase
-        .from('tablia_menu_items')
+        .from('menu_items')
         .insert(items);
 
       if (itemsError)
@@ -209,7 +209,7 @@ export async function confirmParsedMenu(
 
   // 3. Set menu status to published
   const { error: publishError } = await supabase
-    .from('tablia_menus')
+    .from('menus')
     .update({
       status: 'published',
       updated_at: new Date().toISOString(),
@@ -223,11 +223,11 @@ export async function confirmParsedMenu(
  * Delete a menu and all its categories/items.
  */
 export async function deleteMenu(menuId: string): Promise<void> {
-  await supabase.from('tablia_menu_items').delete().eq('menu_id', menuId);
-  await supabase.from('tablia_menu_categories').delete().eq('menu_id', menuId);
+  await supabase.from('menu_items').delete().eq('menu_id', menuId);
+  await supabase.from('menu_categories').delete().eq('menu_id', menuId);
 
   const { error } = await supabase
-    .from('tablia_menus')
+    .from('menus')
     .delete()
     .eq('id', menuId);
 
@@ -239,7 +239,7 @@ export async function deleteMenu(menuId: string): Promise<void> {
  */
 export async function getMenusByVenue(venueId: string): Promise<Menu[]> {
   const { data, error } = await supabase
-    .from('tablia_menus')
+    .from('menus')
     .select('*')
     .eq('venue_id', venueId)
     .order('created_at', { ascending: false });
@@ -263,31 +263,31 @@ export async function getPublishedMenu(venueSlug: string): Promise<{
 } | null> {
   // Single query: venue → published menu → categories → items
   const { data: venue, error } = await supabase
-    .from('tablia_venues')
+    .from('venues')
     .select(
       `
       id, name, slug, cuisine_type, logo_url,
-      tablia_menus!inner (
+      menus!inner (
         id, status,
-        tablia_menu_categories (
+        menu_categories (
           *,
-          tablia_menu_items (*)
+          menu_items (*)
         )
       )
     `,
     )
     .eq('slug', venueSlug)
-    .eq('tablia_menus.status', 'published')
+    .eq('menus.status', 'published')
     .single();
 
   if (error || !venue) return null;
 
   // Extract from nested structure
-  const menus = (venue as any).tablia_menus;
+  const menus = (venue as any).menus;
   const menu = Array.isArray(menus) ? menus[0] : menus;
   if (!menu) return null;
 
-  const rawCategories = menu.tablia_menu_categories || [];
+  const rawCategories = menu.menu_categories || [];
 
   // Filter visible categories, sort, and attach sorted available items
   const categoriesWithItems = rawCategories
@@ -295,7 +295,7 @@ export async function getPublishedMenu(venueSlug: string): Promise<{
     .sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
     .map((cat: any) => ({
       ...cat,
-      items: (cat.tablia_menu_items || [])
+      items: (cat.menu_items || [])
         .filter((item: any) => item.is_available)
         .sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0)),
     }));
@@ -316,13 +316,13 @@ export async function getPublishedMenu(venueSlug: string): Promise<{
  */
 export async function getMenuForEdit(menuId: string): Promise<ParsedMenu> {
   const { data: categories } = await supabase
-    .from('tablia_menu_categories')
+    .from('menu_categories')
     .select('*')
     .eq('menu_id', menuId)
     .order('sort_order');
 
   const { data: items } = await supabase
-    .from('tablia_menu_items')
+    .from('menu_items')
     .select('*')
     .eq('menu_id', menuId)
     .order('sort_order');

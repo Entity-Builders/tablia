@@ -133,11 +133,11 @@ describe('menu-service', () => {
       ).resolves.toBeUndefined();
 
       const calledTables = mockFrom.mock.calls.map((c) => c[0]);
-      expect(calledTables).toContain('tablia_menu_items');
-      expect(calledTables).toContain('tablia_menu_categories');
+      expect(calledTables).toContain('menu_items');
+      expect(calledTables).toContain('menu_categories');
     });
 
-    it('llama a from("tablia_menus") en algún momento (para update status)', async () => {
+    it('llama a from("menus") en algún momento (para update status)', async () => {
       singleQueue.push(
         { error: null }, // delete items
         { error: null }, // delete categories
@@ -150,7 +150,7 @@ describe('menu-service', () => {
 
       await confirmParsedMenu('menu-uuid-001', mockParsedMenu);
 
-      expect(mockFrom).toHaveBeenCalledWith('tablia_menus');
+      expect(mockFrom).toHaveBeenCalledWith('menus');
     });
   });
 
@@ -159,10 +159,10 @@ describe('menu-service', () => {
       await deleteMenu('menu-uuid-001');
 
       const tables = mockFrom.mock.calls.map((c) => c[0]);
-      expect(tables.indexOf('tablia_menu_items')).toBeLessThan(
-        tables.indexOf('tablia_menu_categories'),
+      expect(tables.indexOf('menu_items')).toBeLessThan(
+        tables.indexOf('menu_categories'),
       );
-      expect(tables).toContain('tablia_menus');
+      expect(tables).toContain('menus');
     });
   });
 

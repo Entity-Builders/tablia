@@ -233,7 +233,7 @@ export function Dashboard() {
       // Menu in 'review' has parsed_json stored — load it as ParsedMenu
       const { supabase } = await import('../lib/supabase');
       const { data, error } = await supabase
-        .from('tablia_menus')
+        .from('menus')
         .select('parsed_json')
         .eq('id', menuId)
         .single();
