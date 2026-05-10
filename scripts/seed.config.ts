@@ -5,6 +5,7 @@
  */
 import { createClient } from '@supabase/supabase-js';
 import { createHmac } from 'node:crypto';
+import { createScopedClient } from '@eb-packages/logic';
 
 // Generate a service_role JWT using the known local Supabase JWT secret.
 // This matches the GOTRUE_JWT_SECRET in eb-infra.
@@ -34,9 +35,12 @@ const supabaseUrl = process.env.VITE_SUPABASE_URL || 'http://localhost:54321';
 const serviceKey =
   process.env.SUPABASE_SERVICE_ROLE_KEY || makeServiceRoleJWT(JWT_SECRET);
 
-export const db = createClient(supabaseUrl, serviceKey, {
+const rawClient = createClient(supabaseUrl, serviceKey, {
   auth: { autoRefreshToken: false, persistSession: false },
 });
+
+// 🛡️ Scoped client — can ONLY access tablia_* tables
+export const db = createScopedClient(rawClient, 'tablia_');
 
 // The user that will "own" seeded venues.
 // Set SEED_USER_ID in .env.seed — get your UUID from Supabase dashboard → Auth.
