@@ -187,10 +187,23 @@ export function VenueLanding() {
     [slug, venueData?.name, handleOpenMenu],
   );
 
+  // ─── Back to landing ────────────────────────────────────────────
+
+  const handleBackToLanding = useCallback(() => {
+    setShowMenu(false);
+    setExiting(false);
+  }, []);
+
   // ─── If menu is showing, render MenuView directly ──────────────
 
   if (showMenu) {
-    return <MenuView prefetchedData={prefetchedMenu.current} slug={slug} />;
+    return (
+      <MenuView
+        prefetchedData={prefetchedMenu.current}
+        slug={slug}
+        onBack={handleBackToLanding}
+      />
+    );
   }
 
   // ─── Loading ───────────────────────────────────────────────────

@@ -5,6 +5,7 @@ import {
   ChevronDown,
   ChevronUp,
   Tag,
+  ArrowLeft,
 } from 'lucide-react';
 import { lazy, Suspense, useState, useEffect } from 'react';
 import type { MenuCategory, MenuItem } from '../types';
@@ -38,9 +39,10 @@ interface MenuData {
 interface MenuViewProps {
   prefetchedData?: MenuData | null;
   slug?: string;
+  onBack?: () => void;
 }
 
-export function MenuView({ prefetchedData, slug: slugProp }: MenuViewProps = {}) {
+export function MenuView({ prefetchedData, slug: slugProp, onBack }: MenuViewProps = {}) {
   const params = useParams();
   const slug = slugProp || params.slug;
   const [chatOpen, setChatOpen] = useState(false);
@@ -171,6 +173,15 @@ export function MenuView({ prefetchedData, slug: slugProp }: MenuViewProps = {})
       {isDemo && <DemoBanner userEmail={DEMO_EMAIL} />}
       {/* Header */}
       <header className='menu-view__header'>
+        {onBack && (
+          <button
+            className='menu-view__back'
+            onClick={onBack}
+            aria-label='Volver a la landing'
+          >
+            <ArrowLeft size={20} />
+          </button>
+        )}
         <div className='menu-view__venue-info'>
           <h1 className='menu-view__venue-name'>{menuData.venue.name}</h1>
           {menuData.venue.cuisine_type && (
