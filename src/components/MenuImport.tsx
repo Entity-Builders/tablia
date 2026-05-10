@@ -169,6 +169,7 @@ export function MenuImport({
   };
 
   // Start enrichment in background when we enter the review step
+  // ONLY as fallback — if the PDF already extracted enough contact data, skip web search
   useEffect(() => {
     if (step !== 'review' || enrichStarted.current || !parsedMenu) return;
     enrichStarted.current = true;
@@ -178,6 +179,24 @@ export function MenuImport({
 
     const pdfContact = parsedMenu.contact_info ?? {};
     setContactInfo(pdfContact);
+
+    // Count how many contact fields the PDF already extracted
+    const pdfFieldCount = Object.values(pdfContact).filter(
+      (v) => v !== undefined && v !== null && v !== '',
+    ).length;
+
+    // If PDF already has 3+ fields, no need to search the web
+    if (pdfFieldCount >= 3) {
+      console.log(
+        `[MenuImport] PDF extracted ${pdfFieldCount} contact fields, skipping web enrichment.`,
+      );
+      return;
+    }
+
+    // Fallback: search the web for missing info
+    console.log(
+      `[MenuImport] PDF only has ${pdfFieldCount} contact fields, enriching from web...`,
+    );
     setEnriching(true);
 
     const runEnrichment = async () => {
