@@ -5,7 +5,7 @@
   "type": "module",
   "description": "Tu menú, potenciado — AI-powered QR menu adapter for restaurants & bars",
   "scripts": {
-    "dev": "vite --host --port 3002",
+    "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "test": "vitest run",
@@ -14,7 +14,9 @@
     "seed": "tsx --env-file=.env.local --env-file=.env.seed scripts/seed-runner.ts",
     "seed:restaurant": "tsx --env-file=.env.local --env-file=.env.seed scripts/seed-runner.ts --scenario restaurant-full",
     "seed:analytics": "tsx --env-file=.env.local --env-file=.env.seed scripts/seed-runner.ts --scenario analytics-ready",
-    "seed:reset": "tsx --env-file=.env.local --env-file=.env.seed scripts/seed-runner.ts --reset"
+    "seed:reset": "tsx --env-file=.env.local --env-file=.env.seed scripts/seed-runner.ts --reset",
+    "deploy:prod": "npm run build -- --mode production && npx wrangler deploy",
+    "db:push": "cd ../../eb-infra && npx supabase link --project-ref xfcvuzcxvdpzkqpnahyx && npx supabase db push"
   },
   "dependencies": {
     "@eb-packages/analytics": "1.0.0",
@@ -42,6 +44,7 @@
     "tsx": "^4.21.0",
     "typescript": "^5.2.2",
     "vite": "^5.3.4",
-    "vitest": "^4.0.18"
+    "vitest": "^4.0.18",
+    "wrangler": "^4.90.0"
   }
 }
