@@ -1,8 +1,29 @@
 .menu-view {
+  --menu-bg: var(--bg-primary);
+  --menu-surface: var(--bg-card);
+  --menu-accent: var(--accent);
+  --menu-accent-rgb: var(--accent-rgb);
+  --menu-secondary: var(--bg-secondary);
+  --menu-price: var(--accent);
+  --menu-text: var(--text-primary);
+  --menu-muted: var(--text-secondary);
+  --menu-border: var(--border);
   min-height: 100vh;
-  background: var(--bg-primary);
-  color: var(--text-primary);
+  background: var(--menu-bg);
+  color: var(--menu-text);
   position: relative;
+}
+
+.menu-view--heading-serif .menu-view__venue-name,
+.menu-view--heading-serif .menu-view__section-header h2,
+.menu-view--heading-display .menu-view__venue-name,
+.menu-view--heading-display .menu-view__section-header h2 {
+  font-family: Georgia, 'Times New Roman', serif;
+}
+
+.menu-view--heading-condensed .menu-view__venue-name,
+.menu-view--heading-condensed .menu-view__section-header h2 {
+  font-family: 'Arial Narrow', 'Roboto Condensed', 'Inter', sans-serif;
 }
 
 /* ─── Loading ─────────────────────────────────────────────────── */
@@ -21,8 +42,8 @@
   align-items: center;
   justify-content: space-between;
   padding: 1rem 1.25rem;
-  border-bottom: 1px solid var(--border);
-  background: var(--bg-card);
+  border-bottom: 1px solid var(--menu-border);
+  background: var(--menu-surface);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -36,8 +57,8 @@
   width: 36px;
   height: 36px;
   border: none;
-  background: var(--bg-secondary);
-  color: var(--text-primary);
+  background: var(--menu-secondary);
+  color: var(--menu-text);
   border-radius: 50%;
   cursor: pointer;
   flex-shrink: 0;
@@ -45,8 +66,8 @@
 }
 
 .menu-view__back:hover {
-  background: rgba(var(--accent-rgb), 0.1);
-  color: var(--accent-dark);
+  background: rgba(var(--menu-accent-rgb), 0.1);
+  color: var(--menu-accent);
 }
 
 .menu-view__back:active {
@@ -67,7 +88,7 @@
 
 .menu-view__cuisine {
   font-size: 0.75rem;
-  color: var(--text-muted);
+  color: var(--menu-muted);
 }
 
 .menu-view__brand {
@@ -77,7 +98,7 @@
   font-family: 'Outfit', sans-serif;
   font-size: 0.75rem;
   font-weight: 600;
-  color: var(--text-muted);
+  color: var(--menu-muted);
 }
 
 /* ─── Content ─────────────────────────────────────────────────── */
@@ -91,22 +112,151 @@
 .menu-view__placeholder {
   text-align: center;
   padding: 4rem 1rem;
-  color: var(--text-secondary);
+  color: var(--menu-muted);
 }
 
 .menu-view__placeholder h1 {
   font-family: 'Outfit', sans-serif;
   font-size: 1.5rem;
   margin: 1rem 0 0.5rem;
-  color: var(--text-primary);
+  color: var(--menu-text);
+}
+
+/* ─── Assistant Entry ─────────────────────────────────────────── */
+
+.menu-view__assistant-card {
+  margin-bottom: 1rem;
+  padding: 0.85rem;
+  background: var(--menu-surface);
+  border: 1px solid var(--menu-border);
+  border-radius: 8px;
+}
+
+.menu-view__memory-card {
+  margin-bottom: 0.75rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid rgba(var(--menu-accent-rgb), 0.2);
+  border-radius: 8px;
+  background: rgba(var(--menu-accent-rgb), 0.07);
+}
+
+.menu-view__memory-card span {
+  display: block;
+  margin-bottom: 0.2rem;
+  color: var(--menu-accent);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.menu-view__memory-card p {
+  color: var(--menu-text);
+  font-size: 0.86rem;
+  line-height: 1.4;
+}
+
+.menu-view__memory-card small {
+  display: block;
+  margin-top: 0.3rem;
+  color: var(--menu-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.menu-view__assistant-copy {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  color: var(--menu-accent);
+  margin-bottom: 0.7rem;
+}
+
+.menu-view__assistant-copy p {
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--menu-text);
+}
+
+.menu-view__assistant-copy span {
+  display: block;
+  margin-top: 0.1rem;
+  font-size: 0.76rem;
+  color: var(--menu-muted);
+}
+
+.menu-view__assistant-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 40px;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 42px;
+}
+
+.menu-view__assistant-form input {
+  min-width: 0;
+  height: 42px;
+  padding: 0 0.85rem;
+  border: 1px solid var(--menu-border);
+  border-radius: 999px;
+  background: var(--menu-bg);
+  color: var(--menu-text);
+  font-size: 0.86rem;
+  outline: none;
+}
+
+.menu-view__assistant-form input:focus {
+  border-color: var(--menu-accent);
+  box-shadow: 0 0 0 3px rgba(var(--menu-accent-rgb), 0.12);
+}
+
+.menu-view__assistant-form button {
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 50%;
+  background: var(--menu-accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.menu-view__assistant-prompts {
+  display: flex;
+  gap: 0.45rem;
+  margin-top: 0.65rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 0.05rem;
+}
+
+.menu-view__assistant-prompts::-webkit-scrollbar {
+  display: none;
+}
+
+.menu-view__assistant-prompts button {
+  flex: 0 0 auto;
+  min-height: 32px;
+  padding: 0.35rem 0.7rem;
+  border: 1px solid rgba(var(--menu-accent-rgb), 0.24);
+  border-radius: 999px;
+  background: rgba(var(--menu-accent-rgb), 0.07);
+  color: var(--menu-accent);
+  font-size: 0.73rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
 }
 
 /* ─── Sections ────────────────────────────────────────────────── */
 
 .menu-view__section {
   margin-bottom: 0.5rem;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
+  background: var(--menu-surface);
+  border: 1px solid var(--menu-border);
   border-radius: var(--radius-md);
   overflow: hidden;
 }
@@ -120,12 +270,12 @@
   background: transparent;
   border: none;
   cursor: pointer;
-  color: var(--text-primary);
+  color: var(--menu-text);
   transition: background 0.2s;
 }
 
 .menu-view__section-header:hover {
-  background: var(--bg-hover);
+  background: var(--menu-secondary);
 }
 
 .menu-view__section-header h2 {
@@ -138,7 +288,7 @@
 
 .menu-view__section-count {
   font-size: 0.7rem;
-  background: var(--accent);
+  background: var(--menu-accent);
   color: #fff;
   padding: 0.1rem 0.45rem;
   border-radius: 999px;
@@ -148,7 +298,7 @@
 /* ─── Items ───────────────────────────────────────────────────── */
 
 .menu-view__items {
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--menu-border);
 }
 
 .menu-view__item {
@@ -157,7 +307,7 @@
   align-items: flex-start;
   gap: 1rem;
   padding: 0.875rem 1rem;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--menu-border);
 }
 
 .menu-view__item:last-child {
@@ -175,9 +325,18 @@
   margin: 0 0 0.15rem;
 }
 
+.menu-view__item-variant {
+  margin: -0.05rem 0 0.15rem;
+  color: var(--menu-accent);
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.25;
+  text-transform: none;
+}
+
 .menu-view__item-desc {
   font-size: 0.82rem;
-  color: var(--text-secondary);
+  color: var(--menu-muted);
   line-height: 1.4;
   margin: 0;
 }
@@ -195,8 +354,8 @@
   gap: 0.2rem;
   font-size: 0.65rem;
   padding: 0.15rem 0.45rem;
-  background: rgba(var(--accent-rgb), 0.08);
-  color: var(--accent-dark);
+  background: rgba(var(--menu-accent-rgb), 0.08);
+  color: var(--menu-accent);
   border-radius: 999px;
   font-weight: 600;
 }
@@ -205,9 +364,50 @@
   font-family: 'Outfit', sans-serif;
   font-size: 0.95rem;
   font-weight: 700;
-  color: var(--accent);
+  color: var(--menu-price);
   white-space: nowrap;
   flex-shrink: 0;
+}
+
+/* ─── Additional Charges & Notes ──────────────────────────────── */
+
+.menu-view__menu-notes {
+  margin: 1.2rem 0 0;
+  padding: 1rem;
+  background: var(--menu-surface);
+  border: 1px solid var(--menu-border);
+  border-radius: 8px;
+  text-align: center;
+}
+
+.menu-view__charge {
+  display: flex;
+  justify-content: center;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  color: var(--menu-text);
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.menu-view__charge strong {
+  color: var(--menu-price);
+}
+
+.menu-view__charge p {
+  flex-basis: 100%;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--menu-muted);
+  text-transform: none;
+}
+
+.menu-view__legal-note {
+  margin-top: 0.45rem;
+  color: var(--menu-text);
+  font-size: 0.84rem;
+  font-weight: 600;
 }
 
 /* ─── Footer ──────────────────────────────────────────────────── */
@@ -219,8 +419,8 @@
   gap: 0.35rem;
   padding: 1.5rem;
   font-size: 0.7rem;
-  color: var(--text-muted);
-  border-top: 1px solid var(--border);
+  color: var(--menu-muted);
+  border-top: 1px solid var(--menu-border);
 }
 
 /* ─── Chat FAB ────────────────────────────────────────────────── */
@@ -232,25 +432,48 @@
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: var(--accent);
+  background: var(--menu-accent);
   color: #fff;
   border: none;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 20px rgba(var(--accent-rgb), 0.4);
-  transition: all 0.3s;
+  box-shadow: 0 4px 20px rgba(var(--menu-accent-rgb), 0.4);
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    background 0.18s ease;
   z-index: 100;
 }
 
 .menu-view__chat-fab:hover {
   transform: scale(1.08);
-  box-shadow: 0 6px 28px rgba(var(--accent-rgb), 0.5);
+  box-shadow: 0 6px 28px rgba(var(--menu-accent-rgb), 0.5);
 }
 
 .menu-view__chat-fab--active {
-  background: var(--text-primary);
+  background: var(--menu-text);
+}
+
+.menu-view__chat-fab:focus-visible {
+  outline: 2px solid var(--menu-accent);
+  outline-offset: 3px;
+}
+
+.menu-view__chat-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 110;
+  border: none;
+  background: rgba(18, 16, 14, 0.18);
+  backdrop-filter: blur(2px);
+  cursor: default;
+}
+
+.menu-view__chat-backdrop:focus-visible {
+  outline: 2px solid var(--menu-accent);
+  outline-offset: -4px;
 }
 
 /* ─── Chat Panel ──────────────────────────────────────────────── */
@@ -262,8 +485,8 @@
   width: calc(100vw - 2rem);
   max-width: 380px;
   max-height: 60vh;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
+  background: var(--menu-surface);
+  border: 1px solid var(--menu-border);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-lg);
   display: flex;
@@ -289,7 +512,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 1rem 1.25rem;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--menu-border);
 }
 
 .menu-view__chat-header h3 {
@@ -303,7 +526,7 @@
   border: none;
   font-size: 1.1rem;
   cursor: pointer;
-  color: var(--text-muted);
+  color: var(--menu-muted);
   padding: 0.25rem;
 }
 
@@ -315,11 +538,11 @@
 }
 
 .menu-view__chat-welcome {
-  background: var(--bg-secondary);
+  background: var(--menu-secondary);
   padding: 0.875rem 1rem;
   border-radius: var(--radius-md);
   font-size: 0.9rem;
-  color: var(--text-secondary);
+  color: var(--menu-muted);
   line-height: 1.5;
 }
 
@@ -327,29 +550,29 @@
   display: flex;
   gap: 0.5rem;
   padding: 0.75rem 1rem;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--menu-border);
 }
 
 .menu-view__chat-input input {
   flex: 1;
   padding: 0.6rem 0.875rem;
-  border: 1px solid var(--border);
+  border: 1px solid var(--menu-border);
   border-radius: var(--radius-sm);
   font-size: 0.9rem;
   font-family: inherit;
-  background: var(--bg-primary);
-  color: var(--text-primary);
+  background: var(--menu-bg);
+  color: var(--menu-text);
   outline: none;
   transition: border-color 0.2s;
 }
 
 .menu-view__chat-input input:focus {
-  border-color: var(--accent);
+  border-color: var(--menu-accent);
 }
 
 .menu-view__chat-input button {
   padding: 0.6rem 1rem;
-  background: var(--accent);
+  background: var(--menu-accent);
   color: #fff;
   border: none;
   border-radius: var(--radius-sm);
@@ -361,4 +584,187 @@
 
 .menu-view__chat-input button:hover {
   opacity: 0.9;
+}
+
+/* ─── Visual DNA Templates ───────────────────────────────────── */
+
+.menu-view--density-compact .menu-view__content {
+  max-width: 760px;
+}
+
+.menu-view--density-compact .menu-view__item {
+  padding: 0.65rem 0.9rem;
+}
+
+.menu-view--density-compact .menu-view__item-name {
+  font-size: 0.9rem;
+}
+
+.menu-view--density-spacious .menu-view__content {
+  max-width: 680px;
+  padding-top: 1.5rem;
+}
+
+.menu-view--density-spacious .menu-view__section {
+  margin-bottom: 0.9rem;
+}
+
+.menu-view--density-spacious .menu-view__item {
+  padding: 1.1rem 1rem;
+}
+
+.menu-view--price-badge .menu-view__item-price {
+  background: rgba(var(--menu-accent-rgb), 0.12);
+  border: 1px solid rgba(var(--menu-accent-rgb), 0.22);
+  border-radius: 999px;
+  padding: 0.25rem 0.55rem;
+}
+
+.menu-view--price-inline .menu-view__item {
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.menu-view--price-inline .menu-view__item-price {
+  align-self: flex-start;
+}
+
+.menu-view--decor-linework .menu-view__section-header h2::after {
+  content: '';
+  display: block;
+  width: 44px;
+  height: 2px;
+  background: var(--menu-accent);
+  margin-top: 0.25rem;
+}
+
+.menu-view--decor-bordered .menu-view__section {
+  border-width: 2px;
+}
+
+.menu-view--decor-none .menu-view__section,
+.menu-view--decor-minimal .menu-view__section {
+  box-shadow: none;
+}
+
+.menu-view--template-heritage .menu-view__header {
+  background: var(--menu-accent);
+  color: #fff;
+  border-bottom: 5px solid var(--menu-secondary);
+  padding: 1.15rem 1.25rem;
+}
+
+.menu-view--template-heritage .menu-view__venue-name,
+.menu-view--template-heritage .menu-view__cuisine,
+.menu-view--template-heritage .menu-view__brand {
+  color: #fff;
+}
+
+.menu-view--template-heritage .menu-view__venue-name {
+  font-size: 1.45rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.menu-view--template-heritage .menu-view__brand {
+  opacity: 0.78;
+}
+
+.menu-view--template-heritage .menu-view__back {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+.menu-view--template-heritage .menu-view__content {
+  padding-top: 1.15rem;
+}
+
+.menu-view--template-heritage .menu-view__section {
+  border: 1.5px solid var(--menu-border);
+  border-radius: 8px;
+  margin-bottom: 1.15rem;
+  box-shadow: none;
+}
+
+.menu-view--template-heritage .menu-view__section-header {
+  justify-content: center;
+  background: var(--menu-surface);
+  border-bottom: 1.5px solid var(--menu-border);
+}
+
+.menu-view--template-heritage .menu-view__section-header h2 {
+  flex: 0 1 auto;
+  background: var(--menu-accent);
+  color: #fff;
+  padding: 0.28rem 1rem;
+  border-radius: 3px;
+  text-align: center;
+  text-transform: uppercase;
+  font-size: 1rem;
+}
+
+.menu-view--template-heritage .menu-view__section-count {
+  background: var(--menu-secondary);
+  color: var(--menu-text);
+}
+
+.menu-view--template-heritage .menu-view__item {
+  border-bottom-color: color-mix(in srgb, var(--menu-border) 45%, transparent);
+}
+
+.menu-view--template-heritage .menu-view__item-name {
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.menu-view--template-heritage .menu-view__item-price {
+  font-weight: 800;
+}
+
+.menu-view--template-botanical .menu-view__section {
+  border-color: var(--menu-border);
+  border-radius: 8px;
+}
+
+.menu-view--template-botanical .menu-view__section-header {
+  background: color-mix(in srgb, var(--menu-secondary) 70%, #fff);
+}
+
+.menu-view--template-botanical .menu-view__section-header h2 {
+  color: var(--menu-accent);
+}
+
+.menu-view--template-night .menu-view__header {
+  background: var(--menu-surface);
+  border-bottom-color: var(--menu-border);
+}
+
+.menu-view--template-night .menu-view__section {
+  border-color: var(--menu-border);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.22);
+}
+
+.menu-view--template-night .menu-view__section-header {
+  background: var(--menu-secondary);
+}
+
+.menu-view--template-night .menu-view__item-tag {
+  background: rgba(var(--menu-accent-rgb), 0.18);
+}
+
+.menu-view--template-minimal .menu-view__header {
+  position: relative;
+  border-bottom-color: var(--menu-border);
+}
+
+.menu-view--template-minimal .menu-view__section {
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+  background: transparent;
+}
+
+.menu-view--template-minimal .menu-view__section-header {
+  padding-left: 0;
+  padding-right: 0;
 }

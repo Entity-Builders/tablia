@@ -11,7 +11,7 @@ import { seedRestaurantFull } from './restaurant-full';
 const POSTHOG_HOST =
   process.env.VITE_POSTHOG_HOST || 'https://us.i.posthog.com';
 const POSTHOG_PROJECT = process.env.VITE_POSTHOG_PROJECT_ID || '';
-const BASE_URL = process.env.VITE_PUBLIC_URL || 'http://localhost:5174';
+const BASE_URL = process.env.VITE_PUBLIC_URL || 'http://tablia.local';
 
 export async function seedAnalyticsReady() {
   log.title('🌱 Seed: Venue listo para analytics');

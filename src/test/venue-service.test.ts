@@ -11,6 +11,7 @@ vi.mock('../lib/supabase', () => {
   const chain: any = {
     select: vi.fn().mockReturnThis(),
     insert: vi.fn().mockReturnThis(),
+    update: vi.fn().mockReturnThis(),
     upsert: vi.fn().mockResolvedValue({ error: null }),
     eq: vi.fn().mockReturnThis(),
     order: vi.fn().mockReturnThis(),
@@ -29,6 +30,7 @@ import {
   createVenue,
   getMyVenues,
   getVenueBySlug,
+  updateVenueChatPersona,
 } from '../services/venue-service';
 
 // ─── Tests ────────────────────────────────────────────────────────
@@ -45,6 +47,7 @@ describe('venue-service', () => {
     chain = {
       select: vi.fn().mockReturnThis(),
       insert: vi.fn().mockReturnThis(),
+      update: vi.fn().mockReturnThis(),
       upsert: vi.fn().mockResolvedValue({ error: null }),
       eq: vi.fn().mockReturnThis(),
       order: vi.fn().mockReturnThis(),
@@ -147,6 +150,25 @@ describe('venue-service', () => {
       const result = await getVenueBySlug('no-existe');
 
       expect(result).toBeNull();
+    });
+  });
+
+  describe('updateVenueChatPersona()', () => {
+    it('guarda el locutor normalizado del venue', async () => {
+      chain.eq.mockResolvedValueOnce({ error: null });
+
+      const result = await updateVenueChatPersona('venue-uuid-001', {
+        id: 'premium',
+      });
+
+      expect(chain.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          chat_persona: { id: 'premium' },
+          updated_at: expect.any(String),
+        }),
+      );
+      expect(chain.eq).toHaveBeenCalledWith('id', 'venue-uuid-001');
+      expect(result).toEqual({ id: 'premium' });
     });
   });
 });

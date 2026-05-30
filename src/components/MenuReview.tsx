@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { ParsedMenu } from '../types';
+import { normalizeParsedMenu } from '../services/parsed-menu-normalizer';
 import {
   Trash2,
   GripVertical,
@@ -36,7 +37,7 @@ export function MenuReview({
   confirmLabel,
 }: MenuReviewProps) {
   const [menu, setMenu] = useState<ParsedMenu>(
-    JSON.parse(JSON.stringify(parsedMenu)),
+    normalizeParsedMenu(JSON.parse(JSON.stringify(parsedMenu))),
   );
   const [expandedCat, setExpandedCat] = useState<number | null>(0);
   const [confirming, setConfirming] = useState(false);

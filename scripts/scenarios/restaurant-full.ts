@@ -30,7 +30,21 @@ import {
 } from '../fixtures/chat.fixtures';
 
 const VENUE_NAME = 'La Parrilla del Centro 🔥';
-const BASE_URL = process.env.VITE_PUBLIC_URL || 'http://localhost:5174';
+const BASE_URL = process.env.VITE_PUBLIC_URL || 'http://tablia.local';
+const VISUAL_STYLE = {
+  template: 'heritage',
+  primary_color: '#7a1830',
+  secondary_color: '#d9d2c4',
+  accent_color: '#9a203d',
+  background_color: '#fbfaf6',
+  text_color: '#201915',
+  heading_style: 'display',
+  density: 'compact',
+  decorative_style: 'ribbon',
+  price_style: 'right-aligned',
+  source_notes:
+    'Cabecera bordó, secciones en cintas, bordes clásicos y precios alineados.',
+};
 
 const CATEGORIES = [
   {
@@ -309,46 +323,68 @@ export async function seedRestaurantFull() {
   // 2. Clean up previous seed (idempotent)
   log.info('Limpiando seed anterior...');
   const { data: existingVenue } = await db
-    .from('tablia_venues')
+    .from('venues')
     .select('id')
     .eq('slug', SEED_SLUG)
     .maybeSingle();
 
   if (existingVenue) {
     const { data: existingMenu } = await db
-      .from('tablia_menus')
+      .from('menus')
       .select('id')
       .eq('venue_id', existingVenue.id)
       .maybeSingle();
 
     if (existingMenu) {
       await db
-        .from('tablia_chat_sessions')
+        .from('chat_sessions')
         .delete()
         .eq('menu_id', existingMenu.id);
       await db
-        .from('tablia_menu_items')
+        .from('menu_items')
         .delete()
         .eq('menu_id', existingMenu.id);
       await db
-        .from('tablia_menu_categories')
+        .from('menu_categories')
         .delete()
         .eq('menu_id', existingMenu.id);
-      await db.from('tablia_menus').delete().eq('id', existingMenu.id);
+      await db.from('menus').delete().eq('id', existingMenu.id);
     }
-    await db.from('tablia_venues').delete().eq('id', existingVenue.id);
+    await db.from('venues').delete().eq('id', existingVenue.id);
   }
 
   // 3. Create venue
   log.info(`Creando venue: ${VENUE_NAME}`);
   const { data: venue, error: venueError } = await db
-    .from('tablia_venues')
+    .from('venues')
     .insert({
       owner_id: SEED_USER_ID,
       name: VENUE_NAME,
       slug: SEED_SLUG,
       description: 'La mejor parrilla argentina del microcentro. Desde 1985.',
       cuisine_type: 'Parrilla',
+      chat_persona: { id: 'curator' },
+      landing_links: [
+        { type: 'menu', label: 'Ver Menú 🍔', isPrimary: true },
+        {
+          type: 'url',
+          label: 'Instagram @laparrillacentro',
+          url: 'https://instagram.com/laparrillacentro',
+          icon: 'instagram',
+        },
+        {
+          type: 'whatsapp',
+          label: 'Reservar por WhatsApp',
+          url: '+5491112345678',
+          icon: 'whatsapp',
+        },
+        {
+          type: 'wifi',
+          label: 'Wi-Fi: ParrillaCentro',
+          value: 'asado1985',
+          icon: 'wifi',
+        },
+      ],
     })
     .select()
     .single();
@@ -359,12 +395,30 @@ export async function seedRestaurantFull() {
   // 4. Create menu
   log.info('Creando menú...');
   const { data: menu, error: menuError } = await db
-    .from('tablia_menus')
+    .from('menus')
     .insert({
       venue_id: venue.id,
       name: 'Menú Principal',
       source_type: 'text',
       source_content: 'Seed generado por script de desarrollo',
+      parsed_json: {
+        metadata: {
+          restaurant_name: VENUE_NAME,
+          cuisine_type: 'Parrilla',
+          confidence: 1,
+        },
+        visual_style: VISUAL_STYLE,
+        additional_charges: [
+          {
+            label: 'Servicio de mesa',
+            price: 2400,
+            currency: 'ARS',
+          },
+        ],
+        legal_notes: [
+          'Todos los derechos reservados | La Boque de Palermo - Soler 5101 | Tel: 112873-0030',
+        ],
+      },
       status: 'published',
     })
     .select()
@@ -379,7 +433,7 @@ export async function seedRestaurantFull() {
     log.info(`  Categoría: ${cat.icon} ${cat.name}`);
 
     const { data: category, error: catError } = await db
-      .from('tablia_menu_categories')
+      .from('menu_categories')
       .insert({
         menu_id: menu.id,
         name: cat.name,
@@ -406,7 +460,7 @@ export async function seedRestaurantFull() {
     }));
 
     const { error: itemsError } = await db
-      .from('tablia_menu_items')
+      .from('menu_items')
       .insert(items);
     if (itemsError)
       throw new Error(`Error en ítems de ${cat.name}: ${itemsError.message}`);
@@ -498,7 +552,7 @@ export async function seedRestaurantFull() {
   ];
 
   const { error: chatError } = await db
-    .from('tablia_chat_sessions')
+    .from('chat_sessions')
     .insert(chatSessions);
 
   if (chatError) {
@@ -510,7 +564,47 @@ export async function seedRestaurantFull() {
     log.ok(`${chatSessions.length} conversaciones de chat creadas`);
   }
 
-  // 7. Print result
+  // 7. Seed loyalty + flash campaign demo
+  log.info('Creando programa de fidelización y promo flash...');
+  const { error: loyaltyError } = await db.from('loyalty_programs').insert({
+    venue_id: venue.id,
+    name: 'Club de visitas',
+    type: 'stamps',
+    status: 'active',
+    rules: {
+      visits_required: 5,
+      reward_label: 'un postre de cortesía',
+    },
+    starts_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+  });
+
+  if (loyaltyError) {
+    log.warn(`Loyalty no insertado: ${loyaltyError.message}`);
+  } else {
+    log.ok('Programa loyalty creado: 5 visitas -> postre de cortesía');
+  }
+
+  const { error: campaignError } = await db.from('venue_campaigns').insert({
+    venue_id: venue.id,
+    name: 'Promo flash demo',
+    type: 'flash_promo',
+    channel: 'in_app',
+    status: 'active',
+    title: 'Promo flash de hoy',
+    body: 'Pedí una parrillada para compartir y sumá un flan mixto con 20% off.',
+    cta_label: 'Válido hoy en el local',
+    segment: { audience: 'all_devices' },
+    starts_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+    ends_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+  });
+
+  if (campaignError) {
+    log.warn(`Promo flash no insertada: ${campaignError.message}`);
+  } else {
+    log.ok('Promo flash in-app creada');
+  }
+
+  // 8. Print result
   const menuUrl = `${BASE_URL}/m/${SEED_SLUG}`;
   console.log('\n' + '─'.repeat(50));
   log.ok('¡Seed completado! 🎉');

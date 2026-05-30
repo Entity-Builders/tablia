@@ -1,0 +1,242 @@
+.engagement-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.engagement-editor__header h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: 'Outfit', sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.engagement-editor__header svg {
+  color: var(--accent);
+}
+
+.engagement-editor__loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 80px;
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+}
+
+.engagement-editor__section {
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.engagement-editor__section:first-of-type {
+  padding-top: 0;
+  border-top: none;
+}
+
+.engagement-editor__section-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.85rem;
+}
+
+.engagement-editor__section-head h4 {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 0.2rem;
+  color: var(--text-primary);
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.engagement-editor__section-head h4 svg {
+  color: var(--accent);
+}
+
+.engagement-editor__section-head p {
+  max-width: 620px;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.engagement-editor__switch {
+  flex-shrink: 0;
+}
+
+.engagement-editor__switch input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.engagement-editor__switch span {
+  position: relative;
+  display: block;
+  width: 44px;
+  height: 26px;
+  border-radius: 999px;
+  background: var(--border-strong);
+  cursor: pointer;
+  transition: background 0.18s ease;
+}
+
+.engagement-editor__switch span::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14);
+  transition: transform 0.18s ease;
+}
+
+.engagement-editor__switch input:checked + span {
+  background: var(--accent);
+}
+
+.engagement-editor__switch input:checked + span::after {
+  transform: translateX(18px);
+}
+
+.engagement-editor__switch input:focus-visible + span {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.engagement-editor__fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+}
+
+.engagement-editor__fields--loyalty {
+  grid-template-columns: minmax(96px, 0.22fr) minmax(0, 1fr);
+}
+
+.engagement-editor__fields label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.engagement-editor__fields span {
+  color: var(--text-secondary);
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.engagement-editor__fields input,
+.engagement-editor__fields textarea {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.9rem;
+  outline: none;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    background 0.15s ease;
+}
+
+.engagement-editor__fields input {
+  height: 40px;
+  padding: 0 0.75rem;
+}
+
+.engagement-editor__fields textarea {
+  min-height: 82px;
+  padding: 0.65rem 0.75rem;
+  resize: vertical;
+  line-height: 1.4;
+}
+
+.engagement-editor__fields input:focus,
+.engagement-editor__fields textarea:focus {
+  border-color: var(--accent);
+  background: var(--bg-card);
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.1);
+}
+
+.engagement-editor__error {
+  padding: 0.7rem 0.85rem;
+  border: 1px solid hsl(0, 75%, 85%);
+  border-radius: 8px;
+  background: hsl(0, 80%, 97%);
+  color: var(--error);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.engagement-editor__save-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding-top: 0.25rem;
+}
+
+.engagement-editor__saved {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--success);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.engagement-editor__save {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-width: 112px;
+  min-height: 38px;
+  padding: 0.55rem 1rem;
+  border: none;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    opacity 0.15s ease,
+    background 0.15s ease;
+}
+
+.engagement-editor__save:hover:not(:disabled) {
+  background: var(--accent-dark);
+}
+
+.engagement-editor__save:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .engagement-editor__fields--loyalty {
+    grid-template-columns: 1fr;
+  }
+
+  .engagement-editor__section-head {
+    gap: 0.75rem;
+  }
+}

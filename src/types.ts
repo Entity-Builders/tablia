@@ -26,6 +26,19 @@ export interface LandingLink {
   isPrimary?: boolean; // "Ver Menú" button — visually prominent
 }
 
+// ─── Chat Persona ───────────────────────────────────────────────
+
+export type ChatPersonaId =
+  | 'curator'
+  | 'friendly'
+  | 'sommelier'
+  | 'concise'
+  | 'premium';
+
+export interface ChatPersona {
+  id: ChatPersonaId;
+}
+
 // ─── Venue (Restaurant/Bar) ─────────────────────────────────────
 
 export interface Venue {
@@ -38,6 +51,7 @@ export interface Venue {
   address?: string;
   cuisine_type?: string;
   landing_links?: LandingLink[];
+  chat_persona?: ChatPersona;
   created_at: string;
   updated_at: string;
 }
@@ -118,6 +132,96 @@ export interface ChatSession {
   created_at: string;
 }
 
+// ─── Customer Memory & Loyalty ─────────────────────────────────
+
+export type CustomerIdentityType = 'email' | 'phone' | 'whatsapp';
+export type ConsentChannel = 'email' | 'sms' | 'whatsapp' | 'web_push';
+export type ConsentStatus = 'opted_in' | 'opted_out';
+export type LoyaltyProgramType = 'stamps' | 'points' | 'visits';
+export type LoyaltyProgramStatus = 'draft' | 'active' | 'paused' | 'archived';
+export type LoyaltyRewardStatus = 'earned' | 'redeemed' | 'expired';
+export type CampaignType = 'flash_promo' | 'announcement' | 'event';
+export type CampaignChannel = 'in_app' | 'web_push' | 'whatsapp' | 'email' | 'all';
+export type CampaignStatus = 'draft' | 'active' | 'paused' | 'archived';
+
+export interface LoyaltyProgressSummary {
+  programId: string;
+  name: string;
+  type: LoyaltyProgramType;
+  visitCount: number;
+  visitsRequired: number;
+  visitsUntilReward: number;
+  rewardLabel: string;
+}
+
+export interface CustomerRewardSummary {
+  id: string;
+  rewardLabel: string;
+  status: LoyaltyRewardStatus;
+}
+
+export interface CustomerCampaignSummary {
+  id: string;
+  type: CampaignType;
+  title: string;
+  body: string;
+  ctaLabel?: string;
+  ctaUrl?: string;
+}
+
+export interface CustomerMemorySummary {
+  ok: boolean;
+  deviceKey: string;
+  customerProfileId: string;
+  venueId: string;
+  visitCount: number;
+  isFirstVisit: boolean;
+  countIncremented: boolean;
+  loyalty?: LoyaltyProgressSummary;
+  reward?: CustomerRewardSummary;
+  campaign?: CustomerCampaignSummary;
+}
+
+export interface LoyaltyProgram {
+  id: string;
+  venue_id: string;
+  name: string;
+  type: LoyaltyProgramType;
+  status: LoyaltyProgramStatus;
+  rules: {
+    visits_required?: number;
+    reward_label?: string;
+    [key: string]: unknown;
+  };
+  starts_at?: string | null;
+  ends_at?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface VenueCampaign {
+  id: string;
+  venue_id: string;
+  name: string;
+  type: CampaignType;
+  channel: CampaignChannel;
+  status: CampaignStatus;
+  title: string;
+  body: string;
+  cta_label?: string | null;
+  cta_url?: string | null;
+  segment: Record<string, unknown>;
+  starts_at?: string | null;
+  ends_at?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface VenueEngagementConfig {
+  loyaltyProgram?: LoyaltyProgram;
+  flashCampaign?: VenueCampaign;
+}
+
 // ─── Analytics ──────────────────────────────────────────────────
 
 export type AnalyticsEventType =
@@ -163,6 +267,44 @@ export interface ParsedContactInfo {
   whatsapp?: string;
 }
 
+export type MenuVisualTemplate =
+  | 'heritage'
+  | 'modern'
+  | 'botanical'
+  | 'night'
+  | 'minimal';
+
+export type MenuHeadingStyle = 'serif' | 'sans' | 'display' | 'condensed';
+export type MenuDensity = 'compact' | 'comfortable' | 'spacious';
+export type MenuDecorativeStyle =
+  | 'none'
+  | 'linework'
+  | 'ribbon'
+  | 'bordered'
+  | 'minimal';
+export type MenuPriceStyle = 'right-aligned' | 'inline' | 'badge';
+
+export interface ParsedMenuVisualStyle {
+  template?: MenuVisualTemplate;
+  primary_color?: string;
+  secondary_color?: string;
+  accent_color?: string;
+  background_color?: string;
+  text_color?: string;
+  heading_style?: MenuHeadingStyle;
+  density?: MenuDensity;
+  decorative_style?: MenuDecorativeStyle;
+  price_style?: MenuPriceStyle;
+  source_notes?: string;
+}
+
+export interface ParsedMenuCharge {
+  label: string;
+  price: number;
+  currency: string;
+  description?: string;
+}
+
 export interface ParsedMenu {
   categories: {
     name: string;
@@ -181,4 +323,7 @@ export interface ParsedMenu {
     confidence: number; // 0-1 parsing confidence score
   };
   contact_info?: ParsedContactInfo;
+  visual_style?: ParsedMenuVisualStyle;
+  additional_charges?: ParsedMenuCharge[];
+  legal_notes?: string[];
 }

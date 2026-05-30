@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase';
-import type { Venue } from '../types';
+import type { ChatPersona, LandingLink, Venue } from '../types';
+import { normalizeChatPersona } from './chat-persona';
 
 /**
  * Create a new venue for the current user.
@@ -84,7 +85,7 @@ export async function getVenueLanding(slug: string): Promise<{
   slug: string;
   logo_url: string | null;
   cuisine_type: string | null;
-  landing_links: import('../types').LandingLink[];
+  landing_links: LandingLink[];
 } | null> {
   const { data, error } = await supabase
     .from('venues')
@@ -104,7 +105,7 @@ export async function getVenueLanding(slug: string): Promise<{
  */
 export async function updateVenueLandingLinks(
   venueId: string,
-  links: import('../types').LandingLink[],
+  links: LandingLink[],
 ): Promise<void> {
   const { error } = await supabase
     .from('venues')
@@ -115,4 +116,25 @@ export async function updateVenueLandingLinks(
     .eq('id', venueId);
 
   if (error) throw new Error(error.message);
+}
+
+/**
+ * Update the assistant voice used by the public menu chat.
+ */
+export async function updateVenueChatPersona(
+  venueId: string,
+  persona: ChatPersona,
+): Promise<ChatPersona> {
+  const chatPersona = normalizeChatPersona(persona);
+
+  const { error } = await supabase
+    .from('venues')
+    .update({
+      chat_persona: chatPersona as unknown as Record<string, unknown>,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', venueId);
+
+  if (error) throw new Error(error.message);
+  return chatPersona;
 }

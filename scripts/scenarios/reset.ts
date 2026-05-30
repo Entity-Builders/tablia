@@ -11,7 +11,7 @@ export async function seedReset() {
   log.info(`Buscando venue con slug: "${SEED_SLUG}"`);
 
   const { data: venue, error } = await db
-    .from('tablia_venues')
+    .from('venues')
     .select('id, slug, name')
     .eq('slug', SEED_SLUG)
     .maybeSingle();
@@ -30,18 +30,19 @@ export async function seedReset() {
   log.info(`Encontrado: "${venue.name}" (${venue.id})`);
 
   const { data: menus } = await db
-    .from('tablia_menus')
+    .from('menus')
     .select('id')
     .eq('venue_id', venue.id);
 
   for (const menu of menus || []) {
-    await db.from('tablia_menu_items').delete().eq('menu_id', menu.id);
-    await db.from('tablia_menu_categories').delete().eq('menu_id', menu.id);
-    await db.from('tablia_menus').delete().eq('id', menu.id);
+    await db.from('chat_sessions').delete().eq('menu_id', menu.id);
+    await db.from('menu_items').delete().eq('menu_id', menu.id);
+    await db.from('menu_categories').delete().eq('menu_id', menu.id);
+    await db.from('menus').delete().eq('id', menu.id);
     log.ok(`Menú eliminado: ${menu.id}`);
   }
 
-  await db.from('tablia_venues').delete().eq('id', venue.id);
+  await db.from('venues').delete().eq('id', venue.id);
   log.ok(`Venue eliminado: "${venue.name}"`);
 
   console.log('\n' + '─'.repeat(50));

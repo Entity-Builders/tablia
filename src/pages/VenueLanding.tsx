@@ -14,9 +14,19 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { useState, useEffect, useRef, useCallback } from 'react';
-import type { LandingLink, LandingLinkIcon, MenuCategory, MenuItem } from '../types';
+import type {
+  ChatPersona,
+  CustomerMemorySummary,
+  LandingLink,
+  LandingLinkIcon,
+  MenuCategory,
+  MenuItem,
+  ParsedMenuCharge,
+  ParsedMenuVisualStyle,
+} from '../types';
 import { analytics } from '../services/analytics';
 import { DemoBanner } from '../components/DemoBanner';
+import { getCustomerMemoryMessage } from '../services/customer-memory-copy';
 import { MenuView } from './MenuView';
 import './VenueLanding.css';
 
@@ -37,8 +47,12 @@ interface MenuData {
     slug: string;
     cuisine_type: string | null;
     logo_url: string | null;
+    chat_persona?: ChatPersona;
   };
   categories: (MenuCategory & { items: MenuItem[] })[];
+  visualStyle?: ParsedMenuVisualStyle;
+  additionalCharges?: ParsedMenuCharge[];
+  legalNotes?: string[];
 }
 
 // ─── Icon Map ────────────────────────────────────────────────────
@@ -84,6 +98,8 @@ export function VenueLanding() {
   const [loading, setLoading] = useState(true);
   const [showMenu, setShowMenu] = useState(false);
   const [exiting, setExiting] = useState(false);
+  const [customerMemory, setCustomerMemory] =
+    useState<CustomerMemorySummary | null>(null);
 
   // Prefetched menu data — loaded in background while user sees landing
   const prefetchedMenu = useRef<MenuData | null>(null);
@@ -106,6 +122,28 @@ export function VenueLanding() {
             venue_name: data.name,
             link_count: data.landing_links.length,
           });
+
+          import('../services/customer-memory-service')
+            .then(({ trackVenueVisit }) =>
+              trackVenueVisit({
+                venueSlug: slug,
+                source: 'landing',
+                metadata: { path: window.location.pathname },
+              }),
+            )
+            .then((summary) => {
+              setCustomerMemory(summary);
+              if (summary) {
+                analytics.track('customer_memory_seen', {
+                  slug,
+                  venue_name: data.name,
+                  visit_count: summary.visitCount,
+                  has_reward: Boolean(summary.reward),
+                  has_campaign: Boolean(summary.campaign),
+                });
+              }
+            })
+            .catch(() => {});
         }
       } catch {
         // Silently fail — will show "not found" state
@@ -200,6 +238,7 @@ export function VenueLanding() {
     return (
       <MenuView
         prefetchedData={prefetchedMenu.current}
+        customerMemory={customerMemory}
         slug={slug}
         onBack={handleBackToLanding}
       />
@@ -242,6 +281,7 @@ export function VenueLanding() {
       : getDefaultLinks();
 
   const isDemo = slug === DEMO_SLUG;
+  const memoryMessage = getCustomerMemoryMessage(customerMemory);
 
   // ─── Render Landing ────────────────────────────────────────────
 
@@ -273,6 +313,14 @@ export function VenueLanding() {
           </span>
         )}
       </div>
+
+      {memoryMessage && (
+        <div className='venue-landing__memory-card'>
+          <span>{memoryMessage.title}</span>
+          <p>{memoryMessage.body}</p>
+          {memoryMessage.meta && <small>{memoryMessage.meta}</small>}
+        </div>
+      )}
 
       {/* Links */}
       <div className='venue-landing__links'>

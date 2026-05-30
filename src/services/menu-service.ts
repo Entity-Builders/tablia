@@ -5,8 +5,14 @@ import type {
   MenuCategory,
   MenuItem,
   MenuSourceType,
+  ChatPersona,
   ParsedMenu,
+  ParsedMenuCharge,
+  ParsedMenuVisualStyle,
 } from '../types';
+import { normalizeParsedMenu } from './parsed-menu-normalizer';
+import { normalizeMenuVisualStyle } from './menu-visual-style';
+import { normalizeChatPersona } from './chat-persona';
 
 /** Derive source_type from MIME. */
 function mimeToSourceType(mime: string): MenuSourceType {
@@ -161,13 +167,19 @@ export async function confirmParsedMenu(
   menuId: string,
   parsedMenu: ParsedMenu,
 ): Promise<void> {
+  const normalizedMenu = normalizeParsedMenu(parsedMenu);
+
   // 1. Delete any existing categories/items for this menu (in case of re-parse)
   await supabase.from('menu_items').delete().eq('menu_id', menuId);
   await supabase.from('menu_categories').delete().eq('menu_id', menuId);
 
   // 2. Insert categories and items
-  for (let catIndex = 0; catIndex < parsedMenu.categories.length; catIndex++) {
-    const cat = parsedMenu.categories[catIndex];
+  for (
+    let catIndex = 0;
+    catIndex < normalizedMenu.categories.length;
+    catIndex++
+  ) {
+    const cat = normalizedMenu.categories[catIndex];
 
     const { data: category, error: catError } = await supabase
       .from('menu_categories')
@@ -212,6 +224,7 @@ export async function confirmParsedMenu(
     .from('menus')
     .update({
       status: 'published',
+      parsed_json: normalizedMenu as unknown as Record<string, unknown>,
       updated_at: new Date().toISOString(),
     })
     .eq('id', menuId);
@@ -258,17 +271,21 @@ export async function getPublishedMenu(venueSlug: string): Promise<{
     slug: string;
     cuisine_type: string | null;
     logo_url: string | null;
+    chat_persona?: ChatPersona;
   };
   categories: (MenuCategory & { items: MenuItem[] })[];
+  visualStyle: ParsedMenuVisualStyle;
+  additionalCharges: ParsedMenuCharge[];
+  legalNotes: string[];
 } | null> {
   // Single query: venue → published menu → categories → items
   const { data: venue, error } = await supabase
     .from('venues')
     .select(
       `
-      id, name, slug, cuisine_type, logo_url,
+      id, name, slug, cuisine_type, logo_url, chat_persona,
       menus!inner (
-        id, status,
+        id, status, parsed_json,
         menu_categories (
           *,
           menu_items (*)
@@ -306,8 +323,18 @@ export async function getPublishedMenu(venueSlug: string): Promise<{
       slug: venue.slug,
       cuisine_type: venue.cuisine_type,
       logo_url: venue.logo_url,
+      chat_persona: normalizeChatPersona((venue as any).chat_persona),
     },
     categories: categoriesWithItems as (MenuCategory & { items: MenuItem[] })[],
+    visualStyle: normalizeMenuVisualStyle(
+      (menu.parsed_json as ParsedMenu | null | undefined)?.visual_style,
+      venue.cuisine_type,
+    ),
+    additionalCharges:
+      (menu.parsed_json as ParsedMenu | null | undefined)?.additional_charges ||
+      [],
+    legalNotes:
+      (menu.parsed_json as ParsedMenu | null | undefined)?.legal_notes || [],
   };
 }
 
@@ -315,6 +342,12 @@ export async function getPublishedMenu(venueSlug: string): Promise<{
  * Load an existing menu's data as a ParsedMenu shape (for editing in MenuReview).
  */
 export async function getMenuForEdit(menuId: string): Promise<ParsedMenu> {
+  const { data: menu } = await supabase
+    .from('menus')
+    .select('parsed_json')
+    .eq('id', menuId)
+    .single();
+
   const { data: categories } = await supabase
     .from('menu_categories')
     .select('*')
@@ -327,7 +360,12 @@ export async function getMenuForEdit(menuId: string): Promise<ParsedMenu> {
     .eq('menu_id', menuId)
     .order('sort_order');
 
+  const storedParsed = menu?.parsed_json as ParsedMenu | null | undefined;
+
   return {
+    metadata: storedParsed?.metadata,
+    contact_info: storedParsed?.contact_info,
+    visual_style: storedParsed?.visual_style,
     categories: (categories || []).map((cat) => ({
       name: cat.name,
       description: cat.description || undefined,

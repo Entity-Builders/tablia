@@ -3,12 +3,12 @@ id = "tablia"
 
 [api]
 port = 54321
-schemas = ["public", "storage", "graphql_public"]
+schemas = ["public", "storage", "graphql_public", "tablia"]
 
 [db]
 port = 54322
 shadow_port = 54320
-major_version = 15
+major_version = 17
 
 [studio]
 port = 54323
@@ -19,9 +19,12 @@ password = "admin"
 port = 54324
 
 [auth]
-site_url = "https://dev.tablia.io"
+site_url = "http://tablia.local"
 additional_redirect_urls = [
-  "http://localhost:5174",
+  "http://tablia.local",
+  "http://tablia.local:3002",
+  "http://localhost:3002",
+  "http://127.0.0.1:3002",
   "https://dev.tablia.io"
 ]
 

@@ -98,6 +98,44 @@
   color: var(--text-secondary);
 }
 
+/* ─── Customer Memory ────────────────────────────────────────── */
+
+.venue-landing__memory-card {
+  width: 100%;
+  max-width: 400px;
+  margin: -0.75rem 0 1rem;
+  padding: 0.8rem 0.95rem;
+  border: 1px solid rgba(var(--accent-rgb), 0.18);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--text-primary);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.05);
+  animation: landingFadeIn 0.45s ease 0.12s both;
+}
+
+.venue-landing__memory-card span {
+  display: block;
+  margin-bottom: 0.2rem;
+  color: var(--accent-dark);
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.venue-landing__memory-card p {
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.venue-landing__memory-card small {
+  display: block;
+  margin-top: 0.35rem;
+  color: var(--text-secondary);
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
 /* ─── Links Container ────────────────────────────────────────── */
 
 .venue-landing__links {

@@ -6,6 +6,8 @@ import { MenuReview } from '../components/MenuReview';
 import { QrModal } from '../components/QrModal';
 import { DemoBanner } from '../components/DemoBanner';
 import { LandingLinksEditor } from '../components/LandingLinksEditor';
+import { ChatPersonaEditor } from '../components/ChatPersonaEditor';
+import { EngagementEditor } from '../components/EngagementEditor';
 import {
   Plus,
   LogOut,
@@ -503,6 +505,24 @@ export function Dashboard() {
                 venueId={venue.id}
                 initialLinks={venue.landing_links ?? []}
               />
+            </section>
+
+            <section className='dash-card dash-card--full'>
+              <ChatPersonaEditor
+                venueId={venue.id}
+                initialPersona={venue.chat_persona}
+                onSaved={(chatPersona) =>
+                  setVenue((current) =>
+                    current
+                      ? { ...current, chat_persona: chatPersona }
+                      : current,
+                  )
+                }
+              />
+            </section>
+
+            <section className='dash-card dash-card--full'>
+              <EngagementEditor venueId={venue.id} />
             </section>
 
             {/* Show analytics only if menu exists */}

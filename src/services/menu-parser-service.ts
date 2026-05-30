@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import type { ParsedMenu } from '../types';
+import { normalizeParsedMenu } from './parsed-menu-normalizer';
 
 const SYSTEM_PROMPT = `Eres un experto en gastronomía y procesamiento de menús de restaurantes. Tu trabajo es analizar texto de un menú y convertirlo en datos estructurados.
 
@@ -10,9 +11,22 @@ REGLAS:
 - Los tags pueden ser: vegano, vegetariano, sin-tacc, sin-gluten, picante, para-compartir, sin-lactosa, apto-celíaco, orgánico, casero
 - Si hay un precio ambiguo o inexistente, usa 0 y marca confianza baja
 - Detecta la moneda del contexto (ARS para pesos argentinos, USD para dólares, EUR para euros). Si no es claro, usa ARS
-- Si un plato tiene variantes (tamaños, sabores), crea un item por variante
+- Si un plato tiene variantes (tamaños, sabores, preparaciones), crea un item por variante pero el name debe ser único e incluir la variante entre paréntesis. Ejemplo: "Provoleta (morrones y rúcula)" y "Provoleta (cebolla y panceta)".
+- No devuelvas dos items con el mismo name dentro de una misma categoría. Si parecen repetidos exactos, conservá uno solo. Si tienen distinto precio o descripción, son variantes y debés diferenciarlos en el name.
 - Mantén el idioma original del menú
+- No asignes tags por default. Usá tags solo cuando el menú lo indique o sea una inferencia gastronómica muy segura; si no hay evidencia, devolvé [].
 - Si detectás el nombre del restaurante o tipo de cocina, incluyelo en metadata
+- Extraé también el ADN visual del menú original en visual_style:
+  - template: heritage, modern, botanical, night o minimal
+  - Colores principales en HEX de 6 dígitos (#7a1830). Usá solo colores observados o muy cercanos al PDF/imagen.
+  - heading_style: serif, sans, display o condensed
+  - density: compact, comfortable o spacious
+  - decorative_style: none, linework, ribbon, bordered o minimal
+  - price_style: right-aligned, inline o badge
+  - source_notes: breve explicación del estilo detectado
+- Extraé cargos adicionales y notas de pie:
+  - Servicio de mesa, cubierto, cargo de envío, mínimo por persona u otros cargos obligatorios van en additional_charges.
+  - Textos legales, teléfonos, derechos reservados o notas generales del pie van en legal_notes.
 - IMPORTANTE: Buscá también información de contacto en el menú (header, footer, márgenes, marcas de agua):
   - Teléfono, WhatsApp, dirección física
   - Redes sociales (Instagram, Facebook, TikTok)
@@ -52,10 +66,34 @@ FORMATO DE RESPUESTA (JSON):
     "wifi_name": "Nombre de la red o null",
     "wifi_password": "Clave del wifi o null",
     "whatsapp": "Número de WhatsApp o null"
-  }
+  },
+  "visual_style": {
+    "template": "heritage",
+    "primary_color": "#7a1830",
+    "secondary_color": "#d9d2c4",
+    "accent_color": "#9a203d",
+    "background_color": "#fffdf8",
+    "text_color": "#201915",
+    "heading_style": "display",
+    "density": "compact",
+    "decorative_style": "ribbon",
+    "price_style": "right-aligned",
+    "source_notes": "Cabecera bordó, secciones en cintas y precios alineados a la derecha."
+  },
+  "additional_charges": [
+    {
+      "label": "Servicio de mesa",
+      "price": 2400,
+      "currency": "ARS",
+      "description": null
+    }
+  ],
+  "legal_notes": [
+    "Todos los derechos reservados | La Boque de Palermo - Soler 5101 | Tel: 112873-0030"
+  ]
 }`;
 
-const CATEGORIES_PROMPT = `Analiza este menú y devolvé SOLAMENTE la lista de secciones/categorías que encontrás, con su descripción si existe.
+const CATEGORIES_PROMPT = `Analiza este menú y devolvé SOLAMENTE la lista de secciones/categorías que encontrás, con su descripción si existe. También devolvé metadata y visual_style del menú original.
 
 Responde SOLO con este formato JSON:
 {
@@ -67,7 +105,26 @@ Responde SOLO con este formato JSON:
     "restaurant_name": "Nombre si se detecta",
     "cuisine_type": "Tipo de cocina",
     "confidence": 0.95
-  }
+  },
+  "visual_style": {
+    "template": "heritage",
+    "primary_color": "#7a1830",
+    "secondary_color": "#d9d2c4",
+    "accent_color": "#9a203d",
+    "background_color": "#fffdf8",
+    "text_color": "#201915",
+    "heading_style": "display",
+    "density": "compact",
+    "decorative_style": "ribbon",
+    "price_style": "right-aligned",
+    "source_notes": "Breve explicación del estilo detectado"
+  },
+  "additional_charges": [
+    { "label": "Servicio de mesa", "price": 2400, "currency": "ARS", "description": null }
+  ],
+  "legal_notes": [
+    "Texto de pie o nota legal si existe"
+  ]
 }`;
 
 function buildItemsPrompt(categoryNames: string[]): string {
@@ -75,6 +132,8 @@ function buildItemsPrompt(categoryNames: string[]): string {
   return `Ahora extraé TODOS los platos/items de las siguientes secciones: ${list}
 
 Para cada item extraé: name, description (null si no tiene), price (número), currency, tags (array de strings).
+Si una sección tiene variantes con el mismo nombre base, cada name debe incluir la variante entre paréntesis. No repitas names idénticos.
+No agregues tags por default; si no hay evidencia clara, usá [].
 
 Responde SOLO con este formato JSON:
 {
@@ -156,7 +215,7 @@ async function parseSingleShot(
     return null as unknown as ParsedMenu; // signal to use chunked approach
   }
 
-  return parseJsonResponse<ParsedMenu>(result.response.text());
+  return normalizeParsedMenu(parseJsonResponse<ParsedMenu>(result.response.text()));
 }
 
 // ─── Chunked parse (large menus) ────────────────────────────────
@@ -164,6 +223,9 @@ async function parseSingleShot(
 interface CategorySkeleton {
   categories: { name: string; description?: string | null }[];
   metadata?: ParsedMenu['metadata'];
+  visual_style?: ParsedMenu['visual_style'];
+  additional_charges?: ParsedMenu['additional_charges'];
+  legal_notes?: ParsedMenu['legal_notes'];
 }
 
 async function parseChunked(chatParts: any[]): Promise<ParsedMenu> {
@@ -210,10 +272,13 @@ async function parseChunked(chatParts: any[]): Promise<ParsedMenu> {
     );
   }
 
-  return {
+  return normalizeParsedMenu({
     categories: allCategories,
     metadata: skeleton.metadata,
-  };
+    visual_style: skeleton.visual_style,
+    additional_charges: skeleton.additional_charges,
+    legal_notes: skeleton.legal_notes,
+  });
 }
 
 // ─── Public API ─────────────────────────────────────────────────

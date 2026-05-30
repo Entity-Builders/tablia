@@ -1,5 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { buildMenuContext, sendChatMessage } from '../services/chat-service';
+import {
+  buildMenuContext,
+  buildSystemPrompt,
+  sendChatMessage,
+} from '../services/chat-service';
 import { mockCategories } from './fixtures/menu.fixtures';
 
 // ─── Mock the analytics singleton ────────────────────────────────
@@ -211,6 +215,60 @@ describe('chat-service', () => {
       const callArgs = mockFn.mock.calls[0][0];
       const systemPromptContent = callArgs.contents[0].parts[0].text;
       expect(systemPromptContent).toContain('Mi Restaurante Especial');
+    });
+
+    it('instruye al asistente a recomendar sin tomar rol de camarero', async () => {
+      const genMod = await import('@google/generative-ai');
+      const mockFn = (genMod as any)._mockGenerateContent;
+      mockFn.mockReset();
+      mockFn.mockResolvedValue({
+        response: { text: () => 'ok' },
+      });
+
+      await sendChatMessage(
+        'test-slug',
+        'Mi Restaurante',
+        'menu context',
+        [],
+        'Algo para compartir',
+      );
+
+      const systemPromptContent = mockFn.mock.calls[0][0].contents[0].parts[0].text;
+      expect(systemPromptContent).toContain('No actúes como camarero');
+      expect(systemPromptContent).toContain('proponé una combinación concreta');
+      expect(systemPromptContent).toContain('agregá vos el acompañamiento ideal');
+    });
+
+    it('inyecta el locutor configurado en el system prompt', async () => {
+      const genMod = await import('@google/generative-ai');
+      const mockFn = (genMod as any)._mockGenerateContent;
+      mockFn.mockReset();
+      mockFn.mockResolvedValue({
+        response: { text: () => 'ok' },
+      });
+
+      await sendChatMessage(
+        'test-slug',
+        'Mi Restaurante',
+        'menu context',
+        [],
+        'Qué va con el bife?',
+        { id: 'premium' },
+      );
+
+      const systemPromptContent = mockFn.mock.calls[0][0].contents[0].parts[0].text;
+      expect(systemPromptContent).toContain('Locutor activo: Elegante.');
+      expect(systemPromptContent).toContain('Tono elegante, sobrio y cuidado.');
+      expect(systemPromptContent).toContain('No uses cierres tipo "¿Te pinta?"');
+    });
+  });
+
+  describe('buildSystemPrompt()', () => {
+    it('usa el locutor por defecto cuando no hay configuración', () => {
+      const prompt = buildSystemPrompt('Mi Restaurante', 'menu context');
+
+      expect(prompt).toContain('Locutor activo: Curador cálido.');
+      expect(prompt).toContain('Evitá slang exagerado');
     });
   });
 });

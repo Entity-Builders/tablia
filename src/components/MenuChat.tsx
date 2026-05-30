@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Send, Loader2, X, Sparkles } from 'lucide-react';
-import type { ChatMessage, MenuCategory, MenuItem } from '../types';
+import type { ChatMessage, ChatPersona, MenuCategory, MenuItem } from '../types';
 import { buildMenuContext, sendChatMessage } from '../services/chat-service';
 import './MenuChat.css';
 
@@ -11,13 +11,17 @@ interface MenuChatProps {
   onClose: () => void;
   /** When true, hides the close button (used in landing demo) */
   isDemo?: boolean;
+  /** Optional first prompt submitted by the menu assistant bar. */
+  initialPrompt?: string;
+  /** Venue-configured assistant voice. */
+  chatPersona?: ChatPersona;
 }
 
 const QUICK_ACTIONS = [
-  '¿Opciones veganas?',
-  '¿Qué me recomendás?',
-  '¿Tienen sin TACC?',
-  '¿Qué postres tienen?',
+  'Recomendame algo',
+  'Algo para compartir',
+  'Sin TACC',
+  'Postre ideal',
 ];
 
 export function MenuChat({
@@ -26,12 +30,16 @@ export function MenuChat({
   categories,
   onClose,
   isDemo = false,
+  initialPrompt,
+  chatPersona,
 }: MenuChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const initialPromptSent = useRef(false);
+  const hasActiveConversation = messages.length > 0;
 
   // Memoize menu context string
   const menuContext = useRef(buildMenuContext(categories)).current;
@@ -39,15 +47,6 @@ export function MenuChat({
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  useEffect(() => {
-    // Focus input on mount
-    inputRef.current?.focus();
-  }, []);
 
   const handleSend = async (text?: string) => {
     const message = text || input.trim();
@@ -70,6 +69,7 @@ export function MenuChat({
         menuContext,
         messages,
         message,
+        chatPersona,
       );
 
       const assistantMsg: ChatMessage = {
@@ -93,6 +93,23 @@ export function MenuChat({
     }
   };
 
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  useEffect(() => {
+    // Focus input on mount
+    inputRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    if (!initialPrompt || initialPromptSent.current) return;
+    initialPromptSent.current = true;
+    void handleSend(initialPrompt);
+    // Only auto-submit once when the chat opens from the assistant bar.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialPrompt]);
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -105,12 +122,16 @@ export function MenuChat({
       {/* Header */}
       <div className='menu-chat__header'>
         <div className='menu-chat__header-info'>
-          <Sparkles size={16} />
+          <Sparkles size={16} aria-hidden='true' />
           <h3>Preguntale al menú</h3>
         </div>
         {!isDemo && (
-          <button className='menu-chat__close' onClick={onClose}>
-            <X size={18} />
+          <button
+            className='menu-chat__close'
+            onClick={onClose}
+            aria-label='Cerrar chat'
+          >
+            <X size={18} aria-hidden='true' />
           </button>
         )}
       </div>
@@ -120,8 +141,8 @@ export function MenuChat({
         {/* Welcome */}
         <div className='menu-chat__bubble menu-chat__bubble--assistant'>
           <p>
-            ¡Hola! 👋 Soy el asistente de <strong>{venueName}</strong>.
-            Preguntame lo que quieras: alergenos, recomendaciones, porciones...
+            Soy el asistente de <strong>{venueName}</strong>. Puedo sugerirte
+            platos, porciones, alergenos y combinaciones usando este menú.
           </p>
         </div>
 
@@ -166,8 +187,15 @@ export function MenuChat({
         <input
           ref={inputRef}
           type='text'
+          name='menu-chat-question'
           className='menu-chat__input'
-          placeholder='Ej: ¿Qué tienen sin gluten?'
+          placeholder={
+            hasActiveConversation
+              ? 'Seguile preguntando al menú…'
+              : 'Ej: ¿Qué tienen sin gluten?…'
+          }
+          aria-label='Escribí una pregunta sobre el menú'
+          autoComplete='off'
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
@@ -177,8 +205,9 @@ export function MenuChat({
           className='menu-chat__send'
           onClick={() => handleSend()}
           disabled={!input.trim() || loading}
+          aria-label='Enviar pregunta'
         >
-          <Send size={18} />
+          <Send size={18} aria-hidden='true' />
         </button>
       </div>
     </div>
