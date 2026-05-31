@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import type { ParsedContactInfo } from '../types';
+import { TABLIA_GEMINI_MODEL } from './gemini-config';
 
 const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY || '');
 
@@ -93,7 +94,7 @@ async function searchAndEnrich(
   existing: ParsedContactInfo,
 ): Promise<ParsedContactInfo> {
   const model = genAI.getGenerativeModel({
-    model: 'gemini-2.0-flash',
+    model: TABLIA_GEMINI_MODEL,
     generationConfig: { responseMimeType: 'application/json' },
     tools: [{ googleSearch: {} } as any],
   });

@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { TABLIA_GEMINI_MODEL } from './gemini-config';
 import type { ParsedMenu } from '../types';
 import { normalizeParsedMenu } from './parsed-menu-normalizer';
 
@@ -194,7 +195,7 @@ function parseJsonResponse<T>(raw: string): T {
 
 function getModel() {
   return genAI.getGenerativeModel({
-    model: 'gemini-2.0-flash',
+    model: TABLIA_GEMINI_MODEL,
     generationConfig: { responseMimeType: 'application/json' },
   });
 }

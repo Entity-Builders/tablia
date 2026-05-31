@@ -1,6 +1,7 @@
 import type { ChatMessage, ChatPersona, ChatSession } from '../types';
 import { analytics } from './analytics';
 import { getChatPersonaPrompt } from './chat-persona';
+import { TABLIA_GEMINI_MODEL } from './gemini-config';
 
 /**
  * Fetch all chat sessions for a venue, ordered by most recent.
@@ -146,7 +147,7 @@ export async function sendChatMessage(
   chatPersona?: ChatPersona,
 ): Promise<string> {
   const ai = await getGenAI();
-  const model = ai.getGenerativeModel({ model: 'gemini-2.0-flash' });
+  const model = ai.getGenerativeModel({ model: TABLIA_GEMINI_MODEL });
 
   const systemPrompt = buildSystemPrompt(venueName, menuContext, chatPersona);
 
