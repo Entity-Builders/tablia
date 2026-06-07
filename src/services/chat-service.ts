@@ -182,7 +182,7 @@ export async function sendChatMessage(
   analytics.track('chat_message_sent', {
     slug: venueSlug,
     venue_name: venueName,
-    message: userMessage,
+    message_length: userMessage.trim().length,
     message_position: history.length + 1, // 1st msg, 2nd msg, etc.
   });
 

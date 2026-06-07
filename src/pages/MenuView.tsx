@@ -182,7 +182,8 @@ export function MenuView({
     analytics.track('assistant_prompt_submitted', {
       slug,
       venue_name: menuData?.venue.name,
-      prompt: trimmed,
+      prompt_length: trimmed.length,
+      prompt_source: 'quick_prompt',
     });
   };
 

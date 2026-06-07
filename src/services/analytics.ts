@@ -1,7 +1,8 @@
 /**
  * App-specific analytics instance for Tablia.
  * Uses the shared @eb-packages/analytics package.
- * Same PostHog project as Promptly, differentiated by `project: 'tablia'`.
+ * Same Entity Builders PostHog project as the other online apps,
+ * differentiated by `app: 'tablia'`.
  */
 import { Analytics, PostHogProvider } from '@eb-packages/analytics';
 
@@ -25,5 +26,9 @@ export function initAnalytics() {
     apiHost: POSTHOG_HOST,
   });
 
-  analytics.setGlobalProperties({ project: 'tablia' });
+  analytics.setGlobalProperties({
+    app: 'tablia',
+    project: 'tablia',
+    environment: import.meta.env.MODE || 'production',
+  });
 }

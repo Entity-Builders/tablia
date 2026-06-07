@@ -7,6 +7,9 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
+    env: {
+      VITE_TABLIA_ANALYTICS_ENDPOINT: '/api/tablia/analytics',
+    },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],

@@ -1,22 +1,15 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { getVenueAnalytics, emptyAnalytics } from '../services/posthog-service';
 import {
-  mockScansTodayRes,
-  mockScansWeekRes,
-  mockScansTotalRes,
-  mockDailyScansRes,
-  mockTopCategoriesRes,
-  mockTopConversationsRes,
+  mockDashboardAnalytics,
 } from './fixtures/analytics.fixtures';
 
-// ─── Helper: mock fetch for all 6 HogQL queries in order ─────────
-function mockPostHogFetch(...responses: any[][]) {
-  let callIndex = 0;
+// ─── Helper: mock safe aggregate analytics endpoint ───────────────
+function mockAnalyticsFetch(payload = mockDashboardAnalytics) {
   vi.mocked(global.fetch).mockImplementation(async () => {
-    const results = responses[callIndex++] ?? [];
     return {
       ok: true,
-      json: async () => ({ results }),
+      json: async () => payload,
     } as Response;
   });
 }
@@ -32,7 +25,7 @@ describe('posthog-service', () => {
     vi.unstubAllGlobals();
   });
 
-  it('retorna emptyAnalytics cuando la API retorna error HTTP', async () => {
+  it('retorna emptyAnalytics cuando el endpoint retorna error HTTP', async () => {
     vi.mocked(global.fetch).mockResolvedValue({
       ok: false,
       statusText: 'Unauthorized',
@@ -44,14 +37,7 @@ describe('posthog-service', () => {
   });
 
   it('retorna DashboardAnalytics correctamente en happy path', async () => {
-    mockPostHogFetch(
-      mockScansTodayRes,
-      mockScansWeekRes,
-      mockScansTotalRes,
-      mockDailyScansRes,
-      mockTopCategoriesRes,
-      mockTopConversationsRes,
-    );
+    mockAnalyticsFetch();
 
     const result = await getVenueAnalytics(
       'la-parrilla-del-centro',
@@ -67,17 +53,16 @@ describe('posthog-service', () => {
       question: '¿Tienen opciones veganas?',
       count: 34,
     });
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        pathname: '/api/tablia/analytics',
+        search: expect.stringContaining('slug=la-parrilla-del-centro'),
+      }),
+    );
   });
 
   it('los dailyScans siempre tienen exactamente 7 días', async () => {
-    mockPostHogFetch(
-      mockScansTodayRes,
-      mockScansWeekRes,
-      mockScansTotalRes,
-      mockDailyScansRes, // Solo tiene 6 días (sin Dom)
-      mockTopCategoriesRes,
-      mockTopConversationsRes,
-    );
+    mockAnalyticsFetch();
 
     const result = await getVenueAnalytics('slug');
 
@@ -91,14 +76,7 @@ describe('posthog-service', () => {
       JSON.stringify({ timestamp: Date.now(), data: cachedData }),
     );
 
-    mockPostHogFetch(
-      mockScansTodayRes,
-      mockScansWeekRes,
-      mockScansTotalRes,
-      mockDailyScansRes,
-      mockTopCategoriesRes,
-      mockTopConversationsRes,
-    );
+    mockAnalyticsFetch();
 
     const onCached = vi.fn();
     await getVenueAnalytics('test-venue', undefined, onCached);
@@ -108,14 +86,7 @@ describe('posthog-service', () => {
   });
 
   it('no llama a onCached si el localStorage está vacío', async () => {
-    mockPostHogFetch(
-      mockScansTodayRes,
-      mockScansWeekRes,
-      mockScansTotalRes,
-      mockDailyScansRes,
-      mockTopCategoriesRes,
-      mockTopConversationsRes,
-    );
+    mockAnalyticsFetch();
 
     const onCached = vi.fn();
     await getVenueAnalytics('sin-cache', undefined, onCached);
@@ -124,14 +95,7 @@ describe('posthog-service', () => {
   });
 
   it('guarda el resultado en localStorage después de un fetch exitoso', async () => {
-    mockPostHogFetch(
-      mockScansTodayRes,
-      mockScansWeekRes,
-      mockScansTotalRes,
-      mockDailyScansRes,
-      mockTopCategoriesRes,
-      mockTopConversationsRes,
-    );
+    mockAnalyticsFetch();
 
     await getVenueAnalytics('la-parrilla');
 
@@ -152,20 +116,16 @@ describe('posthog-service', () => {
   });
 
   it('filtra topCategories sin nombre (null/undefined)', async () => {
-    // Simulate PostHog returning a row with null category name
-    const catsWithNull = [[null, 99], ...mockTopCategoriesRes];
-    mockPostHogFetch(
-      mockScansTodayRes,
-      mockScansWeekRes,
-      mockScansTotalRes,
-      mockDailyScansRes,
-      catsWithNull,
-      mockTopConversationsRes,
-    );
+    mockAnalyticsFetch({
+      ...mockDashboardAnalytics,
+      topCategories: [
+        { name: '', views: 99 },
+        ...mockDashboardAnalytics.topCategories,
+      ],
+    });
 
     const result = await getVenueAnalytics('slug');
     const names = result.topCategories.map((c) => c.name);
-    expect(names).not.toContain(null);
-    expect(names).not.toContain(undefined);
+    expect(names).not.toContain('');
   });
 });

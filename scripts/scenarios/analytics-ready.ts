@@ -10,7 +10,6 @@ import { seedRestaurantFull } from './restaurant-full';
 
 const POSTHOG_HOST =
   process.env.VITE_POSTHOG_HOST || 'https://us.i.posthog.com';
-const POSTHOG_PROJECT = process.env.VITE_POSTHOG_PROJECT_ID || '';
 const BASE_URL = process.env.VITE_PUBLIC_URL || 'http://tablia.local';
 
 export async function seedAnalyticsReady() {
@@ -30,11 +29,8 @@ export async function seedAnalyticsReady() {
   log.info(`Slug del venue: \x1b[1m${SEED_SLUG}\x1b[0m`);
   log.url('Menú público', `${BASE_URL}/m/${SEED_SLUG}`);
 
-  if (POSTHOG_PROJECT) {
-    log.url(
-      'PostHog events',
-      `${POSTHOG_HOST}/project/${POSTHOG_PROJECT}/events?properties=%5B%7B%22key%22%3A%22slug%22%2C%22value%22%3A%22${SEED_SLUG}%22%7D%5D`,
-    );
-  }
+  log.info(
+    `  4. En PostHog (${POSTHOG_HOST}), filtrá eventos por app=tablia y slug=${SEED_SLUG}`,
+  );
   console.log('─'.repeat(50) + '\n');
 }

@@ -155,7 +155,7 @@ describe('chat-service', () => {
       expect(analytics.track).toHaveBeenCalledWith('chat_message_sent', {
         slug: 'la-parrilla-del-centro',
         venue_name: 'La Parrilla del Centro',
-        message: '¿Tienen opciones veganas?',
+        message_length: '¿Tienen opciones veganas?'.length,
         message_position: 1,
       });
     });

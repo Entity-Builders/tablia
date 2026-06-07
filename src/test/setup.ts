@@ -3,12 +3,12 @@ import '@testing-library/jest-dom';
 // Mock import.meta.env for all tests
 Object.defineProperty(import.meta, 'env', {
   value: {
-    VITE_POSTHOG_API_KEY: 'test-posthog-key',
-    VITE_POSTHOG_PROJECT_ID: 'test-project-id',
     VITE_POSTHOG_HOST: 'https://us.i.posthog.com',
     VITE_POSTHOG_KEY: 'test-posthog-key',
+    VITE_TABLIA_ANALYTICS_ENDPOINT: '/api/tablia/analytics',
     VITE_GEMINI_API_KEY: 'test-gemini-key',
     DEV: false,
+    MODE: 'test',
   },
   writable: true,
 });
