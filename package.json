@@ -20,9 +20,10 @@
   },
   "dependencies": {
     "@eb-packages/analytics": "1.0.0",
+    "@eb-packages/app-registry": "workspace:*",
+    "@eb-packages/auth": "workspace:*",
+    "@eb-packages/auth-ui-web": "workspace:*",
     "@google/generative-ai": "^0.24.1",
-    "@supabase/auth-ui-react": "^0.4.7",
-    "@supabase/auth-ui-shared": "^0.1.8",
     "@supabase/supabase-js": "^2.97.0",
     "lucide-react": "^0.564.0",
     "qrcode.react": "^4.2.0",
