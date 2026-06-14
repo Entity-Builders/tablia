@@ -13,7 +13,7 @@
 
 .login__container {
   width: 100%;
-  max-width: 400px;
+  max-width: 440px;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 20px;
@@ -41,4 +41,217 @@
 .login__tagline {
   color: var(--text-secondary);
   font-size: 0.95rem;
+}
+
+.login__auth-panel {
+  color: var(--text-primary);
+}
+
+.login__auth-panel .space-y-1,
+.login__auth-panel .space-y-2,
+.login__auth-panel .space-y-3,
+.login__auth-panel .space-y-4,
+.login__auth-panel .space-y-5 {
+  display: grid;
+}
+
+.login__auth-panel .space-y-1 {
+  gap: 0.25rem;
+}
+
+.login__auth-panel .space-y-2 {
+  gap: 0.5rem;
+}
+
+.login__auth-panel .space-y-3 {
+  gap: 0.75rem;
+}
+
+.login__auth-panel .space-y-4 {
+  gap: 1rem;
+}
+
+.login__auth-panel .space-y-5 {
+  gap: 1.25rem;
+}
+
+.login__auth-heading {
+  text-align: center;
+}
+
+.login__auth-heading h1 {
+  color: var(--text-primary);
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.35rem;
+  line-height: 1.2;
+  margin: 0;
+}
+
+.login__auth-heading p,
+.login__auth-note {
+  color: var(--text-secondary);
+  font-size: 0.92rem;
+  line-height: 1.5;
+  margin: 0.4rem 0 0;
+}
+
+.login__auth-note {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-hover);
+  padding: 0.8rem 0.9rem;
+  text-align: left;
+}
+
+.login__auth-panel form {
+  display: grid;
+  gap: 1rem;
+  border-top: 1px solid var(--border);
+  padding-top: 1rem;
+}
+
+.login__auth-panel label {
+  display: block;
+  text-align: left;
+}
+
+.login__auth-panel label span,
+.login__auth-panel form > div:first-child {
+  display: block;
+  color: var(--text-primary);
+  font-size: 0.86rem;
+  font-weight: 700;
+  margin-bottom: 0.45rem;
+}
+
+.login__auth-panel input {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font: inherit;
+  outline: none;
+  padding: 0 0.85rem;
+  transition:
+    border-color 0.16s ease,
+    box-shadow 0.16s ease;
+}
+
+.login__auth-panel input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.14);
+}
+
+.login__auth-panel input:disabled {
+  background: var(--bg-hover);
+  color: var(--text-muted);
+}
+
+.login__auth-panel button {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.94rem;
+  font-weight: 800;
+  padding: 0 1rem;
+  transition:
+    background 0.16s ease,
+    border-color 0.16s ease,
+    color 0.16s ease,
+    transform 0.16s ease;
+}
+
+.login__auth-panel form button[type='submit'],
+.login__auth-panel > .space-y-4 > .space-y-4 button {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.login__auth-panel button:hover:not(:disabled) {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.login__auth-panel form button[type='submit']:hover:not(:disabled),
+.login__auth-panel > .space-y-4 > .space-y-4 button:hover:not(:disabled) {
+  background: var(--accent-dark);
+  border-color: var(--accent-dark);
+}
+
+.login__auth-panel button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  transform: none;
+}
+
+.login__auth-panel .rounded-md {
+  border-radius: var(--radius-sm);
+}
+
+.login__auth-panel .border-rose-200:not(form),
+.login__auth-panel .border-emerald-200:not(form),
+.login__auth-panel .border-amber-200:not(form),
+.login__auth-panel .border-slate-200:not(form) {
+  border: 1px solid var(--border);
+  padding: 0.85rem;
+}
+
+.login__auth-panel .border-rose-200:not(form) {
+  background: color-mix(in srgb, var(--error) 10%, #fff);
+  color: var(--error);
+}
+
+.login__auth-panel .border-emerald-200:not(form) {
+  background: color-mix(in srgb, var(--success) 10%, #fff);
+  color: var(--success);
+}
+
+.login__auth-panel .border-amber-200:not(form) {
+  background: color-mix(in srgb, var(--warning) 14%, #fff);
+  color: #7c4a03;
+}
+
+.login__auth-panel .text-xs {
+  font-size: 0.78rem;
+}
+
+.login__auth-panel .text-sm {
+  font-size: 0.9rem;
+}
+
+.login__auth-panel .text-base {
+  font-size: 1rem;
+}
+
+.login__auth-panel .font-bold,
+.login__auth-panel .font-black {
+  font-weight: 800;
+}
+
+.login__auth-panel .uppercase {
+  text-transform: uppercase;
+}
+
+.login__auth-panel .truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 520px) {
+  .login {
+    padding: 1rem;
+  }
+
+  .login__container {
+    padding: 2rem 1.25rem;
+  }
 }

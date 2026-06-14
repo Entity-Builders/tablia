@@ -1,18 +1,44 @@
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthProvider';
-import { supabase } from '../lib/supabase';
-import { Auth } from '@supabase/auth-ui-react';
-import { ThemeSupa } from '@supabase/auth-ui-shared';
+import {
+  useSupabaseAccountAccess,
+  type SupabaseAuthAccessClient,
+} from '@eb-packages/auth';
+import { AccountAccessPanel } from '@eb-packages/auth-ui-web';
 import { useEffect } from 'react';
 import { UtensilsCrossed } from 'lucide-react';
+import { isSupabaseConfigured, supabase } from '../lib/supabase';
+import { tabliaAuthConfig } from '../lib/auth-config';
+import { analytics } from '../services/analytics';
 import './LoginPage.css';
+
+const TABLIA_AUTH_MESSAGES = {
+  supabaseNotConfigured: 'Supabase no esta configurado en este entorno.',
+  missingEmail: 'Ingresa tu email para continuar.',
+  missingCredentials: 'Ingresa el email y el codigo.',
+  codeSent: 'Revisa tu email e ingresa el codigo aca.',
+  connected: 'Cuenta conectada.',
+  guestReady: '',
+  oauthStarted: 'Continua con Google para terminar el acceso.',
+  oauthFailed: 'No pudimos completar el acceso. Proba de nuevo.',
+  oauthLinkedIdentityError:
+    'Ese Google ya esta conectado a otra cuenta. Usa codigo por email o entra con otra cuenta.',
+  authMethodUnavailable: 'Ese metodo no esta disponible para Tablia.',
+};
 
 export function LoginPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const defaultView =
-    searchParams.get('mode') === 'register' ? 'sign_up' : 'sign_in';
+  const entryMode =
+    searchParams.get('mode') === 'register' ? 'register' : 'login';
+  const account = useSupabaseAccountAccess({
+    client: supabase as unknown as SupabaseAuthAccessClient,
+    isConfigured: isSupabaseConfigured,
+    authConfig: tabliaAuthConfig,
+    analytics,
+    messages: TABLIA_AUTH_MESSAGES,
+  });
 
   useEffect(() => {
     if (user) {
@@ -30,39 +56,30 @@ export function LoginPage() {
           </div>
           <p className='login__tagline'>Tu menú, potenciado</p>
         </div>
-        <Auth
-          view={defaultView}
-          supabaseClient={supabase as any}
-          appearance={{
-            theme: ThemeSupa,
-            variables: {
-              default: {
-                colors: {
-                  brand: 'hsl(25, 95%, 55%)',
-                  brandAccent: 'hsl(25, 95%, 45%)',
-                },
-              },
-            },
-          }}
-          providers={['google']}
-          redirectTo={window.location.origin + '/dashboard'}
-          localization={{
-            variables: {
-              sign_in: {
-                email_label: 'Email',
-                password_label: 'Contraseña',
-                button_label: 'Iniciar sesión',
-                link_text: '¿Ya tenés cuenta? Iniciá sesión',
-              },
-              sign_up: {
-                email_label: 'Email',
-                password_label: 'Contraseña',
-                button_label: 'Registrarse',
-                link_text: '¿No tenés cuenta? Registrate',
-              },
-            },
-          }}
-        />
+        <div className='login__auth-panel'>
+          <AccountAccessPanel
+            config={tabliaAuthConfig}
+            account={account}
+            slots={{
+              header: (
+                <div className='login__auth-heading'>
+                  <h1>
+                    {entryMode === 'register'
+                      ? 'Crear cuenta de Tablia'
+                      : tabliaAuthConfig.copy?.title}
+                  </h1>
+                  <p>{tabliaAuthConfig.copy?.subtitle}</p>
+                </div>
+              ),
+              noSessionContent: (
+                <p className='login__auth-note'>
+                  Entra con codigo por email o Google para administrar tu menu,
+                  QR y asistente.
+                </p>
+              ),
+            }}
+          />
+        </div>
       </div>
     </div>
   );
