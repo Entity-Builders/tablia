@@ -4,6 +4,17 @@ import {
   mockDashboardAnalytics,
 } from './fixtures/analytics.fixtures';
 
+vi.mock('../lib/supabase', () => ({
+  supabase: {
+    auth: {
+      getSession: vi.fn().mockResolvedValue({
+        data: { session: { access_token: 'test-access-token' } },
+        error: null,
+      }),
+    },
+  },
+}));
+
 // ─── Helper: mock safe aggregate analytics endpoint ───────────────
 function mockAnalyticsFetch(payload = mockDashboardAnalytics) {
   vi.mocked(global.fetch).mockImplementation(async () => {
@@ -58,7 +69,12 @@ describe('posthog-service', () => {
         pathname: '/api/tablia/analytics',
         search: expect.stringContaining('slug=la-parrilla-del-centro'),
       }),
+      expect.objectContaining({
+        headers: { Authorization: 'Bearer test-access-token' },
+      }),
     );
+    const calledUrl = vi.mocked(global.fetch).mock.calls[0][0] as URL;
+    expect(calledUrl.searchParams.has('venueName')).toBe(false);
   });
 
   it('los dailyScans siempre tienen exactamente 7 días', async () => {

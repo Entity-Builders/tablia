@@ -19,6 +19,16 @@ export interface DashboardAnalytics {
   dailyScans: { day: string; value: number }[];
   topCategories: { name: string; views: number }[];
   topConversations: { question: string; count: number }[];
+  linkClicks?: { type: string; count: number }[];
+  assistantUsage?: {
+    opens: number;
+    prompts: number;
+    messages: number;
+  };
+  engagement?: {
+    rewardsVisible: number;
+    campaignsVisible: number;
+  };
 }
 
 /**
@@ -37,6 +47,9 @@ export const emptyAnalytics: DashboardAnalytics = {
   ],
   topCategories: [],
   topConversations: [],
+  linkClicks: [],
+  assistantUsage: { opens: 0, prompts: 0, messages: 0 },
+  engagement: { rewardsVisible: 0, campaignsVisible: 0 },
 };
 
 function readCachedAnalytics(
@@ -94,12 +107,35 @@ function normalizeAnalyticsPayload(payload: unknown): DashboardAnalytics {
     topConversations: Array.isArray(value?.topConversations)
       ? value.topConversations.filter((row) => row.question)
       : [],
+    linkClicks: Array.isArray(value?.linkClicks)
+      ? value.linkClicks.filter((row) => row.type)
+      : [],
+    assistantUsage: {
+      opens: value?.assistantUsage?.opens ?? 0,
+      prompts: value?.assistantUsage?.prompts ?? 0,
+      messages: value?.assistantUsage?.messages ?? 0,
+    },
+    engagement: {
+      rewardsVisible: value?.engagement?.rewardsVisible ?? 0,
+      campaignsVisible: value?.engagement?.campaignsVisible ?? 0,
+    },
   };
+}
+
+async function readAuthorizationHeader() {
+  try {
+    const { supabase } = await import('../lib/supabase');
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    return token ? { Authorization: `Bearer ${token}` } : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 export async function getVenueAnalytics(
   slug: string,
-  venueName?: string,
+  _venueName?: string,
   onCached?: (data: DashboardAnalytics) => void,
 ): Promise<DashboardAnalytics> {
   const cacheKey = `tablia_analytics_${slug}`;
@@ -116,9 +152,10 @@ export async function getVenueAnalytics(
   try {
     const url = new URL(ANALYTICS_ENDPOINT, window.location.origin);
     url.searchParams.set('slug', slug);
-    if (venueName) url.searchParams.set('venueName', venueName);
 
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      headers: await readAuthorizationHeader(),
+    });
     if (!response.ok) {
       throw new Error(`Analytics API error: ${response.statusText}`);
     }

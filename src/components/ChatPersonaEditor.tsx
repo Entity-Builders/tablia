@@ -6,10 +6,15 @@ import {
   getChatPersonaOption,
   normalizeChatPersona,
 } from '../services/chat-persona';
+import {
+  captureOwnerError,
+  trackOwnerEvent,
+} from '../services/owner-analytics';
 import './ChatPersonaEditor.css';
 
 interface ChatPersonaEditorProps {
   venueId: string;
+  venueSlug?: string;
   initialPersona?: ChatPersona;
   onSaved?: (persona: ChatPersona) => void;
 }
@@ -29,6 +34,7 @@ const PREVIEW_BY_PERSONA: Record<ChatPersonaId, string> = {
 
 export function ChatPersonaEditor({
   venueId,
+  venueSlug,
   initialPersona,
   onSaved,
 }: ChatPersonaEditorProps) {
@@ -63,9 +69,18 @@ export function ChatPersonaEditor({
         id: selectedId,
       });
       onSaved?.(nextPersona);
+      trackOwnerEvent('chat_persona_saved', {
+        slug: venueSlug,
+        persona_id: nextPersona.id,
+      });
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
     } catch (err) {
+      captureOwnerError('chat_persona_save_failed', err, {
+        slug: venueSlug,
+        workflow: 'chat_persona_save',
+        persona_id: selectedId,
+      });
       alert(
         err instanceof Error
           ? err.message

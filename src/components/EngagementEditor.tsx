@@ -1,12 +1,17 @@
 import { useEffect, useState } from 'react';
 import { Check, Gift, Loader2, Megaphone, Save } from 'lucide-react';
+import {
+  captureOwnerError,
+  trackOwnerEvent,
+} from '../services/owner-analytics';
 import './EngagementEditor.css';
 
 interface EngagementEditorProps {
   venueId: string;
+  venueSlug?: string;
 }
 
-export function EngagementEditor({ venueId }: EngagementEditorProps) {
+export function EngagementEditor({ venueId, venueSlug }: EngagementEditorProps) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -101,9 +106,20 @@ export function EngagementEditor({ venueId }: EngagementEditorProps) {
 
       setLoyaltyId(program.id);
       setCampaignId(campaign.id);
+      trackOwnerEvent('engagement_config_saved', {
+        slug: venueSlug,
+        has_loyalty: loyaltyEnabled,
+        has_campaign: campaignEnabled,
+      });
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
     } catch (err) {
+      captureOwnerError('engagement_config_save_failed', err, {
+        slug: venueSlug,
+        workflow: 'engagement_config_save',
+        has_loyalty: loyaltyEnabled,
+        has_campaign: campaignEnabled,
+      });
       setError(
         err instanceof Error ? err.message : 'No se pudo guardar engagement',
       );

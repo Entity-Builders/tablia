@@ -46,6 +46,10 @@ export function resetSupabaseMock() {
 export const mockSupabase = {
   from: vi.fn().mockReturnValue(mockSupabaseChain),
   auth: {
+    getSession: vi.fn().mockResolvedValue({
+      data: { session: { access_token: 'test-access-token' } },
+      error: null,
+    }),
     getUser: vi
       .fn()
       .mockResolvedValue({

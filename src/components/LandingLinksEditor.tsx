@@ -20,6 +20,10 @@ import {
   Loader2,
 } from 'lucide-react';
 import type { LandingLink, LandingLinkType, LandingLinkIcon } from '../types';
+import {
+  captureOwnerError,
+  trackOwnerEvent,
+} from '../services/owner-analytics';
 import './LandingLinksEditor.css';
 
 const MAX_LINKS = 6;
@@ -63,12 +67,14 @@ const TYPE_OPTIONS: { value: LandingLinkType; label: string }[] = [
 
 interface LandingLinksEditorProps {
   venueId: string;
+  venueSlug?: string;
   initialLinks: LandingLink[];
   onSaved?: () => void;
 }
 
 export function LandingLinksEditor({
   venueId,
+  venueSlug,
   initialLinks,
   onSaved,
 }: LandingLinksEditorProps) {
@@ -173,8 +179,16 @@ export function LandingLinksEditor({
       setDirty(false);
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
+      trackOwnerEvent('landing_links_saved', {
+        slug: venueSlug,
+        link_count: links.length,
+      });
       onSaved?.();
     } catch (err) {
+      captureOwnerError('landing_links_save_failed', err, {
+        slug: venueSlug,
+        workflow: 'landing_links_save',
+      });
       alert(
         err instanceof Error
           ? err.message
@@ -183,7 +197,7 @@ export function LandingLinksEditor({
     } finally {
       setSaving(false);
     }
-  }, [venueId, links, onSaved]);
+  }, [venueId, venueSlug, links, onSaved]);
 
   // ─── Render ────────────────────────────────────────────────────
 

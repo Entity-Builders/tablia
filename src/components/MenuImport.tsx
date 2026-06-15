@@ -3,6 +3,13 @@ import type { ParsedMenu, ParsedContactInfo, LandingLink } from '../types';
 import { MenuReview } from './MenuReview';
 import { LandingSetupStep } from './LandingSetupStep';
 import {
+  bucketConfidence,
+  bucketCount,
+  bucketFileSize,
+  captureOwnerError,
+  trackOwnerEvent,
+} from '../services/owner-analytics';
+import {
   SUPPORTED_FILE_TYPES,
   MAX_FILE_SIZE,
 } from '../services/menu-parser-service';
@@ -142,8 +149,16 @@ export function MenuImport({
     if (!canSubmit) return;
     setError(null);
     setStep('parsing');
+    const baseProps = {
+      slug: venueSlug,
+      input_mode: inputMode,
+      file_type: selectedFile?.type,
+      file_size_bucket: bucketFileSize(selectedFile?.size),
+    };
+    trackOwnerEvent('menu_parse_started', baseProps);
 
     try {
+      let nextParsed: ParsedMenu | null = null;
       if (inputMode === 'text') {
         const { createMenuFromText } = await import('../services/menu-service');
         const { menu, parsed } = await createMenuFromText(
@@ -152,6 +167,7 @@ export function MenuImport({
         );
         setMenuId(menu.id);
         setParsedMenu(parsed);
+        nextParsed = parsed;
       } else if (selectedFile) {
         const { createMenuFromFile } = await import('../services/menu-service');
         const { menu, parsed } = await createMenuFromFile(
@@ -160,9 +176,28 @@ export function MenuImport({
         );
         setMenuId(menu.id);
         setParsedMenu(parsed);
+        nextParsed = parsed;
       }
+      const categoryCount = nextParsed?.categories.length ?? 0;
+      const itemCount =
+        nextParsed?.categories.reduce(
+          (sum, category) => sum + category.items.length,
+          0,
+        ) ?? 0;
+      trackOwnerEvent('menu_parse_succeeded', {
+        ...baseProps,
+        category_count: categoryCount,
+        item_count_bucket: bucketCount(itemCount),
+        confidence_bucket: bucketConfidence(
+          nextParsed?.metadata?.confidence,
+        ),
+      });
       setStep('review');
     } catch (err) {
+      captureOwnerError('menu_parse_failed', err, {
+        ...baseProps,
+        workflow: 'menu_parse',
+      });
       setError(err instanceof Error ? err.message : 'Error al parsear el menú');
       setStep('input');
     }
@@ -223,6 +258,16 @@ export function MenuImport({
     try {
       const { confirmParsedMenu } = await import('../services/menu-service');
       await confirmParsedMenu(menuId, editedMenu);
+      const itemCount = editedMenu.categories.reduce(
+        (sum, category) => sum + category.items.length,
+        0,
+      );
+      trackOwnerEvent('menu_review_confirmed', {
+        slug: venueSlug,
+        category_count: editedMenu.categories.length,
+        item_count_bucket: bucketCount(itemCount),
+        confidence_bucket: bucketConfidence(editedMenu.metadata?.confidence),
+      });
 
       // If we have any contact info (from PDF or enrichment), show landing setup
       const hasContactData = Object.values(contactInfo).some(
@@ -235,6 +280,10 @@ export function MenuImport({
         setStep('done');
       }
     } catch (err) {
+      captureOwnerError('menu_publish_failed', err, {
+        slug: venueSlug,
+        workflow: 'menu_publish',
+      });
       setError(err instanceof Error ? err.message : 'Error al guardar el menú');
     }
   };
@@ -247,7 +296,16 @@ export function MenuImport({
         '../services/venue-service'
       );
       await updateVenueLandingLinks(venueId, links);
+      trackOwnerEvent('landing_setup_completed', {
+        slug: venueSlug,
+        link_count: links.length,
+        had_contact_data: true,
+      });
     } catch {
+      captureOwnerError('landing_links_save_failed', new Error('save_failed'), {
+        slug: venueSlug,
+        workflow: 'landing_setup',
+      });
       // Non-critical — user can configure later from dashboard
       console.warn('[MenuImport] Failed to save landing links');
     }
@@ -255,6 +313,9 @@ export function MenuImport({
   };
 
   const handleLandingSkip = () => {
+    trackOwnerEvent('landing_setup_skipped', {
+      slug: venueSlug,
+    });
     setStep('done');
   };
 

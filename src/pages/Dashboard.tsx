@@ -1,6 +1,6 @@
 import { useAuth } from '../contexts/AuthProvider';
 import { useNavigate } from 'react-router-dom';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { MenuImport } from '../components/MenuImport';
 import { MenuReview } from '../components/MenuReview';
 import { QrModal } from '../components/QrModal';
@@ -34,6 +34,10 @@ import {
   getVenueAnalytics,
   type DashboardAnalytics,
 } from '../services/posthog-service';
+import {
+  captureOwnerError,
+  trackOwnerEvent,
+} from '../services/owner-analytics';
 
 // ─── Mini Bar Chart Component ───────────────────────────────────
 
@@ -102,6 +106,8 @@ export function Dashboard() {
     import('../types').ChatSession[]
   >([]);
   const [expandedSession, setExpandedSession] = useState<string | null>(null);
+  const dashboardViewTracked = useRef<string | null>(null);
+  const analyticsViewTracked = useRef<string | null>(null);
 
   const activeMenu = menus[0] ?? null; // first menu (most recent)
   const isPublished = activeMenu?.status === 'published';
@@ -138,6 +144,16 @@ export function Dashboard() {
     loadVenues();
   }, [loadVenues]);
 
+  useEffect(() => {
+    if (view !== 'venue' || !venue) return;
+    if (dashboardViewTracked.current === venue.slug) return;
+    dashboardViewTracked.current = venue.slug;
+    trackOwnerEvent('owner_dashboard_viewed', {
+      slug: venue.slug,
+      menu_status: activeMenu?.status ?? 'none',
+    });
+  }, [view, venue?.slug, activeMenu?.status]);
+
   // Load analytics when a published menu is active.
   // Note: only show loading skeleton when there is no prior data.
   // This avoids the flash (StrictMode runs effects twice; on the 2nd run we
@@ -158,6 +174,13 @@ export function Dashboard() {
       getVenueAnalytics(venue.slug, venue.name, onCached)
         .then((freshData) => {
           setAnalyticsData(freshData);
+          if (analyticsViewTracked.current !== venue.slug) {
+            analyticsViewTracked.current = venue.slug;
+            trackOwnerEvent('owner_analytics_viewed', {
+              slug: venue.slug,
+              menu_status: activeMenu?.status ?? 'published',
+            });
+          }
         })
         .catch(() => {
           // Keep existing data if fetch fails
@@ -204,7 +227,14 @@ export function Dashboard() {
       setVenue(newVenue);
       setMenus([]);
       setView('venue');
+      trackOwnerEvent('venue_created', {
+        slug: newVenue.slug,
+      });
     } catch (err) {
+      captureOwnerError('venue_create_failed', err, {
+        slug,
+        workflow: 'venue_create',
+      });
       setVenueError(
         err instanceof Error
           ? err.message
@@ -283,6 +313,10 @@ export function Dashboard() {
       await confirmParsedMenu(editingMenuId, editedMenu);
       await handleMenuCreated();
     } catch (err) {
+      captureOwnerError('menu_publish_failed', err, {
+        slug: venue?.slug,
+        workflow: 'menu_edit',
+      });
       setEditError(
         err instanceof Error ? err.message : 'Error al guardar cambios',
       );
@@ -310,6 +344,28 @@ export function Dashboard() {
     navigator.clipboard.writeText(menuUrl);
     setLinkCopied(true);
     setTimeout(() => setLinkCopied(false), 2000);
+    trackOwnerEvent('qr_link_copied', {
+      slug: venue?.slug,
+      source: 'dashboard_public_link',
+    });
+  };
+
+  const handleOpenQr = () => {
+    setShowQr(true);
+    trackOwnerEvent('qr_modal_opened', {
+      slug: venue?.slug,
+    });
+  };
+
+  const handleStartMenuImport = () => {
+    if (venue) {
+      trackOwnerEvent('menu_import_started', {
+        slug: venue.slug,
+        source: activeMenu ? 'replace_or_edit' : 'empty_state',
+        menu_status: activeMenu?.status ?? 'none',
+      });
+    }
+    setView('import-menu');
   };
 
   const handleNameChange = (name: string) => {
@@ -464,7 +520,7 @@ export function Dashboard() {
                         </a>
                         <button
                           className='dash-hero__btn dash-hero__btn--outline'
-                          onClick={() => setShowQr(true)}
+                          onClick={handleOpenQr}
                         >
                           <QrCode size={16} />
                           QR
@@ -490,7 +546,7 @@ export function Dashboard() {
                 ) : (
                   <button
                     className='dash-hero__btn dash-hero__btn--primary'
-                    onClick={() => setView('import-menu')}
+                    onClick={handleStartMenuImport}
                   >
                     <Plus size={18} />
                     Importar menú
@@ -503,6 +559,7 @@ export function Dashboard() {
             <section className='dash-card dash-card--full' style={{ marginBottom: '1rem' }}>
               <LandingLinksEditor
                 venueId={venue.id}
+                venueSlug={venue.slug}
                 initialLinks={venue.landing_links ?? []}
               />
             </section>
@@ -510,6 +567,7 @@ export function Dashboard() {
             <section className='dash-card dash-card--full'>
               <ChatPersonaEditor
                 venueId={venue.id}
+                venueSlug={venue.slug}
                 initialPersona={venue.chat_persona}
                 onSaved={(chatPersona) =>
                   setVenue((current) =>
@@ -522,7 +580,7 @@ export function Dashboard() {
             </section>
 
             <section className='dash-card dash-card--full'>
-              <EngagementEditor venueId={venue.id} />
+              <EngagementEditor venueId={venue.id} venueSlug={venue.slug} />
             </section>
 
             {/* Show analytics only if menu exists */}
@@ -785,7 +843,7 @@ export function Dashboard() {
                 </p>
                 <button
                   className='dashboard__add-btn dashboard__add-btn--large'
-                  onClick={() => setView('import-menu')}
+                  onClick={handleStartMenuImport}
                 >
                   <Plus size={20} />
                   Importar menú
