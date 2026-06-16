@@ -23,6 +23,7 @@
     "@eb-packages/app-registry": "workspace:*",
     "@eb-packages/auth": "workspace:*",
     "@eb-packages/auth-ui-web": "workspace:*",
+    "@eb-packages/ui-web": "workspace:*",
     "@google/generative-ai": "^0.24.1",
     "@supabase/supabase-js": "^2.97.0",
     "lucide-react": "^0.564.0",

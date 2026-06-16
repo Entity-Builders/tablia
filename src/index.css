@@ -1,4 +1,5 @@
 /* ─── Tablia Design System ────────────────────────────────────── */
+@import '@eb-packages/ui-web/styles.css';
 
 :root {
   /* Brand Colors — warm, gastronomic palette */
