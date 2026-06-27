@@ -1,15 +1,9 @@
-import { createClient } from '@supabase/supabase-js';
+import {
+  supabase,
+  supabaseAnonKey,
+  supabaseUrl,
+} from '@eb-packages/logic/src/supabase';
 
-const supabaseUrl =
-  import.meta.env.VITE_SUPABASE_URL || 'http://127.0.0.1:54321';
-const supabaseAnonKey =
-  import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH';
+export { supabase };
 
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    storageKey: 'eb:tablia:supabase-auth',
-  },
-  db: { schema: 'tablia' },
-});

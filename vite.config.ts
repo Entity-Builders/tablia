@@ -24,6 +24,10 @@ export default defineConfig(({ mode }) => {
       'process.env.EXPO_PUBLIC_SUPABASE_URL': JSON.stringify(env.VITE_SUPABASE_URL || ''),
       'process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY': JSON.stringify(env.VITE_SUPABASE_ANON_KEY || ''),
       'process.env.EXPO_PUBLIC_SUPABASE_SCHEMA': JSON.stringify(env.VITE_SUPABASE_SCHEMA || 'tablia'),
+      'process.env.VITE_ENTITY_BUILDERS_APP_ID': JSON.stringify(env.VITE_ENTITY_BUILDERS_APP_ID || 'tablia'),
+      'process.env.EXPO_PUBLIC_ENTITY_BUILDERS_APP_ID': JSON.stringify(env.VITE_ENTITY_BUILDERS_APP_ID || 'tablia'),
+      'process.env.VITE_APP_ID': JSON.stringify(env.VITE_APP_ID || 'tablia'),
+      'process.env.EXPO_PUBLIC_APP_ID': JSON.stringify(env.VITE_APP_ID || 'tablia'),
     },
   };
 });

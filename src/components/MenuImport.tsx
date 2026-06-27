@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import type { ParsedMenu, ParsedContactInfo, LandingLink } from '../types';
 import { MenuReview } from './MenuReview';
 import { LandingSetupStep } from './LandingSetupStep';
+import { MenuImportInputStep } from './MenuImportInputStep';
 import {
   bucketConfidence,
   bucketCount,
@@ -14,15 +15,11 @@ import {
   MAX_FILE_SIZE,
 } from '../services/menu-parser-service';
 import {
-  FileText,
-  Upload,
   Loader2,
   CheckCircle2,
   AlertCircle,
   ArrowLeft,
   QrCode,
-  X,
-  File as FileIcon,
 } from 'lucide-react';
 import './MenuImport.css';
 
@@ -45,15 +42,6 @@ interface MenuImportProps {
   onMenuCreated: () => void;
   onCancel: () => void;
 }
-
-/** Human-readable file size. */
-function formatSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-const ACCEPT_STRING = Object.keys(SUPPORTED_FILE_TYPES).join(',');
 
 export function MenuImport({
   venueId,
@@ -139,6 +127,11 @@ export function MenuImport({
     },
     [validateAndSetFile],
   );
+
+  const handleFileRemove = useCallback(() => {
+    setSelectedFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  }, []);
 
   // ─── Parse handlers ────────────────────────────────────────────
 
@@ -323,125 +316,24 @@ export function MenuImport({
 
   if (step === 'input') {
     return (
-      <div className='menu-import'>
-        <div className='menu-import__header'>
-          <button className='menu-import__back' onClick={onCancel}>
-            <ArrowLeft size={20} />
-          </button>
-          <h2>Importar menú</h2>
-        </div>
-
-        <div className='menu-import__body'>
-          {/* ─── Tab switcher ─── */}
-          <div className='menu-import__tabs'>
-            <button
-              className={`menu-import__tab ${inputMode === 'file' ? 'menu-import__tab--active' : ''}`}
-              onClick={() => setInputMode('file')}
-            >
-              <Upload size={16} />
-              Archivo
-            </button>
-            <button
-              className={`menu-import__tab ${inputMode === 'text' ? 'menu-import__tab--active' : ''}`}
-              onClick={() => setInputMode('text')}
-            >
-              <FileText size={16} />
-              Texto
-            </button>
-          </div>
-
-          {/* ─── File mode ─── */}
-          {inputMode === 'file' && (
-            <>
-              <p className='menu-import__hint'>
-                Subí un PDF o foto de tu menú. Tablia lo analiza automáticamente
-                con inteligencia artificial.
-              </p>
-
-              {!selectedFile ? (
-                <div
-                  className={`menu-import__dropzone ${isDragOver ? 'menu-import__dropzone--active' : ''}`}
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                  onDrop={handleDrop}
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <Upload size={32} className='menu-import__dropzone-icon' />
-                  <span className='menu-import__dropzone-text'>
-                    Arrastrá un archivo o hacé clic para buscar
-                  </span>
-                  <span className='menu-import__dropzone-formats'>
-                    PDF, JPG, PNG o WebP · máx 10 MB
-                  </span>
-                  <input
-                    ref={fileInputRef}
-                    type='file'
-                    accept={ACCEPT_STRING}
-                    onChange={handleFileSelect}
-                    className='menu-import__file-input'
-                  />
-                </div>
-              ) : (
-                <div className='menu-import__file-preview'>
-                  <FileIcon size={20} />
-                  <div className='menu-import__file-info'>
-                    <span className='menu-import__file-name'>
-                      {selectedFile.name}
-                    </span>
-                    <span className='menu-import__file-size'>
-                      {formatSize(selectedFile.size)}
-                    </span>
-                  </div>
-                  <button
-                    className='menu-import__file-remove'
-                    onClick={() => {
-                      setSelectedFile(null);
-                      if (fileInputRef.current) fileInputRef.current.value = '';
-                    }}
-                    title='Quitar archivo'
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-              )}
-            </>
-          )}
-
-          {/* ─── Text mode ─── */}
-          {inputMode === 'text' && (
-            <>
-              <p className='menu-import__hint'>
-                Pegá el texto de tu menú. Puede ser un copy-paste de WhatsApp,
-                una lista de platos con precios, o el contenido de tu menú
-                actual.
-              </p>
-
-              <textarea
-                className='menu-import__textarea'
-                placeholder={`Ejemplo:\n\nENTRADAS\nEmpanadas de carne (x3) $2500\nProvoleta con orégano $3200\n\nPLATOS PRINCIPALES\nBife de chorizo con papas $8500\nMilanesa napolitana con fritas $7200\n\nBEBIDAS\nCoca-Cola $1500\nCerveza artesanal IPA $3000`}
-                value={menuText}
-                onChange={(e) => setMenuText(e.target.value)}
-                rows={14}
-              />
-            </>
-          )}
-
-          {error && (
-            <div className='menu-import__error'>
-              <AlertCircle size={16} />
-              {error}
-            </div>
-          )}
-
-          <button
-            className='menu-import__submit'
-            onClick={handleParse}
-            disabled={!canSubmit}
-          >
-            Analizar con IA
-          </button>
-        </div>
-      </div>
+      <MenuImportInputStep
+        inputMode={inputMode}
+        menuText={menuText}
+        selectedFile={selectedFile}
+        error={error}
+        canSubmit={canSubmit}
+        isDragOver={isDragOver}
+        fileInputRef={fileInputRef}
+        onCancel={onCancel}
+        onInputModeChange={setInputMode}
+        onMenuTextChange={setMenuText}
+        onFileSelect={handleFileSelect}
+        onFileRemove={handleFileRemove}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        onParse={handleParse}
+      />
     );
   }
 
