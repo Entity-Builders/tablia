@@ -42,7 +42,7 @@ import {
 // ─── Mini Bar Chart Component ───────────────────────────────────
 
 function MiniBarChart({ data }: { data: { day: string; value: number }[] }) {
-  const max = Math.max(...data.map((d) => d.value));
+  const max = Math.max(1, ...data.map((d) => d.value));
   return (
     <div className='dash-chart'>
       <div className='dash-chart__bars'>
@@ -202,8 +202,12 @@ export function Dashboard() {
   }, [venue?.id]);
 
   const handleSignOut = async () => {
-    await signOut();
-    navigate('/');
+    try {
+      await signOut();
+      navigate('/');
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'No se pudo cerrar sesión');
+    }
   };
 
   const handleCreateVenue = async () => {
@@ -263,19 +267,8 @@ export function Dashboard() {
 
     try {
       // Menu in 'review' has parsed_json stored — load it as ParsedMenu
-      const { supabase } = await import('../lib/supabase');
-      const { data, error } = await supabase
-        .from('menus')
-        .select('parsed_json')
-        .eq('id', menuId)
-        .single();
-
-      if (error) throw new Error(error.message);
-      if (data?.parsed_json) {
-        setEditingParsedMenu(data.parsed_json as unknown as ParsedMenu);
-      } else {
-        throw new Error('No se encontraron datos del menú parseado.');
-      }
+      const { getStoredParsedMenu } = await import('../services/menu-service');
+      setEditingParsedMenu(await getStoredParsedMenu(menuId));
     } catch (err) {
       setEditError(
         err instanceof Error ? err.message : 'Error al cargar el menú',

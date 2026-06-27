@@ -165,6 +165,15 @@ export const MAX_FILE_SIZE = 10 * 1024 * 1024;
 /** Items-per-batch when chunking large menus. */
 const CATEGORY_BATCH_SIZE = 5;
 
+type GeminiTextPart = { text: string };
+type GeminiInlineDataPart = {
+  inlineData: {
+    mimeType: string;
+    data: string;
+  };
+};
+type GeminiPart = GeminiTextPart | GeminiInlineDataPart;
+
 /** Clean Gemini response and parse as JSON. */
 function parseJsonResponse<T>(raw: string): T {
   // Strategy 1: Strip markdown fences and try parsing
@@ -203,17 +212,15 @@ function getModel() {
 // ─── Single-shot parse (small menus) ────────────────────────────
 
 async function parseSingleShot(
-  contentParts: Parameters<
-    ReturnType<typeof genAI.getGenerativeModel>['generateContent']
-  >[0],
-): Promise<ParsedMenu> {
+  contentParts: GeminiPart[],
+): Promise<ParsedMenu | null> {
   const model = getModel();
   const result = await model.generateContent(contentParts);
 
   // Check for truncation
   const candidate = result.response.candidates?.[0];
   if (candidate?.finishReason === 'MAX_TOKENS') {
-    return null as unknown as ParsedMenu; // signal to use chunked approach
+    return null;
   }
 
   return normalizeParsedMenu(parseJsonResponse<ParsedMenu>(result.response.text()));
@@ -229,7 +236,7 @@ interface CategorySkeleton {
   legal_notes?: ParsedMenu['legal_notes'];
 }
 
-async function parseChunked(chatParts: any[]): Promise<ParsedMenu> {
+async function parseChunked(chatParts: GeminiPart[]): Promise<ParsedMenu> {
   const model = getModel();
 
   // Phase 1: Extract category names only (small response)

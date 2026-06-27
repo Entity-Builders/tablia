@@ -13,12 +13,178 @@ import type {
 import { normalizeParsedMenu } from './parsed-menu-normalizer';
 import { normalizeMenuVisualStyle } from './menu-visual-style';
 import { normalizeChatPersona } from './chat-persona';
+import { throwIfSupabaseError, toServiceError } from './supabase-errors';
+
+const DEFAULT_MENU_NAME = 'Menú Principal';
+const DUPLICATE_MENU_MESSAGE =
+  'Este establecimiento ya tiene un menú. Eliminá el existente antes de crear uno nuevo.';
+
+type MenuImportInput = {
+  venueId: string;
+  name?: string;
+  sourceType: MenuSourceType;
+  sourceContent: string;
+  parse: () => Promise<ParsedMenu>;
+};
+
+type PublishedMenuRow = {
+  name: string;
+  slug: string;
+  cuisine_type: string | null;
+  logo_url: string | null;
+  chat_persona?: unknown;
+  menus?: PublishedMenuData | PublishedMenuData[] | null;
+};
+
+type PublishedMenuData = {
+  parsed_json?: unknown;
+  menu_categories?: PublishedCategoryRow[] | null;
+};
+
+type PublishedCategoryRow = MenuCategory & {
+  menu_items?: MenuItem[] | null;
+};
 
 /** Derive source_type from MIME. */
 function mimeToSourceType(mime: string): MenuSourceType {
   if (mime === 'application/pdf') return 'pdf';
   if (mime.startsWith('image/')) return 'image';
   return 'text';
+}
+
+function sortBySortOrder<T extends { sort_order: number }>(rows: T[]): T[] {
+  return [...rows].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+}
+
+function firstOrSingle<T>(value: T | T[] | null | undefined): T | null {
+  if (Array.isArray(value)) return value[0] ?? null;
+  return value ?? null;
+}
+
+async function ensureVenueCanCreateMenu(venueId: string): Promise<void> {
+  const { count, error } = await supabase
+    .from('menus')
+    .select('id', { count: 'exact', head: true })
+    .eq('venue_id', venueId);
+
+  throwIfSupabaseError(error, 'No se pudo verificar el menú existente.');
+
+  if ((count ?? 0) > 0) {
+    throw new Error(DUPLICATE_MENU_MESSAGE);
+  }
+}
+
+async function createParsingMenu({
+  venueId,
+  name,
+  sourceType,
+  sourceContent,
+}: Omit<MenuImportInput, 'parse'>): Promise<Menu> {
+  const { data, error } = await supabase
+    .from('menus')
+    .insert({
+      venue_id: venueId,
+      name: name || DEFAULT_MENU_NAME,
+      source_type: sourceType,
+      source_content: sourceContent,
+      status: 'parsing',
+    })
+    .select()
+    .single();
+
+  throwIfSupabaseError(error, 'No se pudo crear el menú.');
+  if (!data) throw new Error('No se pudo crear el menú.');
+
+  return data as Menu;
+}
+
+async function markMenuAsDraft(menuId: string): Promise<void> {
+  const { error } = await supabase
+    .from('menus')
+    .update({ status: 'draft', updated_at: new Date().toISOString() })
+    .eq('id', menuId);
+
+  throwIfSupabaseError(error, 'No se pudo revertir el menú a borrador.');
+}
+
+async function updateMenuWithParsedResult(
+  menu: Menu,
+  parsed: ParsedMenu,
+): Promise<Menu> {
+  const { data, error } = await supabase
+    .from('menus')
+    .update({
+      parsed_json: parsed as unknown as Record<string, unknown>,
+      status: 'review',
+      name: parsed.metadata?.restaurant_name || menu.name,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', menu.id)
+    .select()
+    .single();
+
+  throwIfSupabaseError(error, 'No se pudo guardar el menú parseado.');
+  if (!data) throw new Error('No se pudo guardar el menú parseado.');
+
+  return data as Menu;
+}
+
+async function createParsedMenu(
+  input: MenuImportInput,
+): Promise<{ menu: Menu; parsed: ParsedMenu }> {
+  await ensureVenueCanCreateMenu(input.venueId);
+  const menu = await createParsingMenu(input);
+
+  try {
+    const parsed = await input.parse();
+    const updatedMenu = await updateMenuWithParsedResult(menu, parsed);
+    return { menu: updatedMenu, parsed };
+  } catch (error) {
+    try {
+      await markMenuAsDraft(menu.id);
+    } catch (rollbackError) {
+      console.warn('[menu-service] Failed to mark parsing menu as draft:', rollbackError);
+    }
+
+    throw toServiceError(error, 'No se pudo interpretar el menú.');
+  }
+}
+
+function normalizePublishedCategories(
+  categories: PublishedCategoryRow[] | null | undefined,
+): (MenuCategory & { items: MenuItem[] })[] {
+  return sortBySortOrder(categories ?? [])
+    .filter((category) => category.is_visible)
+    .map(({ menu_items: menuItems, ...category }) => ({
+      ...category,
+      items: sortBySortOrder(menuItems ?? []).filter(
+        (item) => item.is_available,
+      ),
+    }));
+}
+
+function getParsedMenu(value: unknown): ParsedMenu | null {
+  if (!value || typeof value !== 'object') return null;
+  return value as ParsedMenu;
+}
+
+export async function getStoredParsedMenu(menuId: string): Promise<ParsedMenu> {
+  const { data, error } = await supabase
+    .from('menus')
+    .select('parsed_json')
+    .eq('id', menuId)
+    .single();
+
+  throwIfSupabaseError(error, 'No se pudo cargar el menú parseado.');
+
+  const parsedMenu = getParsedMenu(
+    (data as { parsed_json?: unknown } | null)?.parsed_json,
+  );
+  if (!parsedMenu) {
+    throw new Error('No se encontraron datos del menú parseado.');
+  }
+
+  return parsedMenu;
 }
 
 /**
@@ -30,63 +196,13 @@ export async function createMenuFromText(
   text: string,
   name?: string,
 ): Promise<{ menu: Menu; parsed: ParsedMenu }> {
-  // 0. Guard: only 1 menu per venue
-  const { count, error: countError } = await supabase
-    .from('menus')
-    .select('id', { count: 'exact', head: true })
-    .eq('venue_id', venueId);
-
-  if (countError) throw new Error(countError.message);
-  if ((count ?? 0) > 0) {
-    throw new Error(
-      'Este establecimiento ya tiene un menú. Eliminá el existente antes de crear uno nuevo.',
-    );
-  }
-
-  // 1. Create menu record in 'parsing' state
-  const { data: menu, error: menuError } = await supabase
-    .from('menus')
-    .insert({
-      venue_id: venueId,
-      name: name || 'Menú Principal',
-      source_type: 'text',
-      source_content: text,
-      status: 'parsing',
-    })
-    .select()
-    .single();
-
-  if (menuError) throw new Error(menuError.message);
-
-  try {
-    // 2. Parse with AI
-    const parsed = await parseMenuFromText(text);
-
-    // 3. Update menu with parsed result, set status to 'review'
-    const { data: updatedMenu, error: updateError } = await supabase
-      .from('menus')
-      .update({
-        parsed_json: parsed as unknown as Record<string, unknown>,
-        status: 'review',
-        name: parsed.metadata?.restaurant_name || menu.name,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', menu.id)
-      .select()
-      .single();
-
-    if (updateError) throw new Error(updateError.message);
-
-    return { menu: updatedMenu as Menu, parsed };
-  } catch (error) {
-    // If parsing fails, set status back to draft
-    await supabase
-      .from('menus')
-      .update({ status: 'draft' })
-      .eq('id', menu.id);
-
-    throw error;
-  }
+  return createParsedMenu({
+    venueId,
+    name,
+    sourceType: 'text',
+    sourceContent: text,
+    parse: () => parseMenuFromText(text),
+  });
 }
 
 /**
@@ -98,65 +214,13 @@ export async function createMenuFromFile(
   file: File,
   name?: string,
 ): Promise<{ menu: Menu; parsed: ParsedMenu }> {
-  // 0. Guard: only 1 menu per venue
-  const { count, error: countError } = await supabase
-    .from('menus')
-    .select('id', { count: 'exact', head: true })
-    .eq('venue_id', venueId);
-
-  if (countError) throw new Error(countError.message);
-  if ((count ?? 0) > 0) {
-    throw new Error(
-      'Este establecimiento ya tiene un menú. Eliminá el existente antes de crear uno nuevo.',
-    );
-  }
-
-  const sourceType = mimeToSourceType(file.type);
-
-  // 1. Create menu record in 'parsing' state
-  const { data: menu, error: menuError } = await supabase
-    .from('menus')
-    .insert({
-      venue_id: venueId,
-      name: name || 'Menú Principal',
-      source_type: sourceType,
-      source_content: file.name,
-      status: 'parsing',
-    })
-    .select()
-    .single();
-
-  if (menuError) throw new Error(menuError.message);
-
-  try {
-    // 2. Parse with AI (multimodal)
-    const parsed = await parseMenuFromFile(file);
-
-    // 3. Update menu with parsed result, set status to 'review'
-    const { data: updatedMenu, error: updateError } = await supabase
-      .from('menus')
-      .update({
-        parsed_json: parsed as unknown as Record<string, unknown>,
-        status: 'review',
-        name: parsed.metadata?.restaurant_name || menu.name,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', menu.id)
-      .select()
-      .single();
-
-    if (updateError) throw new Error(updateError.message);
-
-    return { menu: updatedMenu as Menu, parsed };
-  } catch (error) {
-    // If parsing fails, set status back to draft
-    await supabase
-      .from('menus')
-      .update({ status: 'draft' })
-      .eq('id', menu.id);
-
-    throw error;
-  }
+  return createParsedMenu({
+    venueId,
+    name,
+    sourceType: mimeToSourceType(file.type),
+    sourceContent: file.name,
+    parse: () => parseMenuFromFile(file),
+  });
 }
 
 /**
@@ -170,8 +234,20 @@ export async function confirmParsedMenu(
   const normalizedMenu = normalizeParsedMenu(parsedMenu);
 
   // 1. Delete any existing categories/items for this menu (in case of re-parse)
-  await supabase.from('menu_items').delete().eq('menu_id', menuId);
-  await supabase.from('menu_categories').delete().eq('menu_id', menuId);
+  const deleteItems = await supabase
+    .from('menu_items')
+    .delete()
+    .eq('menu_id', menuId);
+  throwIfSupabaseError(deleteItems.error, 'No se pudieron eliminar ítems previos.');
+
+  const deleteCategories = await supabase
+    .from('menu_categories')
+    .delete()
+    .eq('menu_id', menuId);
+  throwIfSupabaseError(
+    deleteCategories.error,
+    'No se pudieron eliminar categorías previas.',
+  );
 
   // 2. Insert categories and items
   for (
@@ -195,6 +271,7 @@ export async function confirmParsedMenu(
 
     if (catError)
       throw new Error(`Error creating category: ${catError.message}`);
+    if (!category) throw new Error('No se pudo crear la categoría.');
 
     // Insert items for this category
     const items = cat.items.map((item, itemIndex) => ({
@@ -229,22 +306,34 @@ export async function confirmParsedMenu(
     })
     .eq('id', menuId);
 
-  if (publishError) throw new Error(publishError.message);
+  throwIfSupabaseError(publishError, 'No se pudo publicar el menú.');
 }
 
 /**
  * Delete a menu and all its categories/items.
  */
 export async function deleteMenu(menuId: string): Promise<void> {
-  await supabase.from('menu_items').delete().eq('menu_id', menuId);
-  await supabase.from('menu_categories').delete().eq('menu_id', menuId);
+  const deleteItems = await supabase
+    .from('menu_items')
+    .delete()
+    .eq('menu_id', menuId);
+  throwIfSupabaseError(deleteItems.error, 'No se pudieron eliminar los ítems.');
+
+  const deleteCategories = await supabase
+    .from('menu_categories')
+    .delete()
+    .eq('menu_id', menuId);
+  throwIfSupabaseError(
+    deleteCategories.error,
+    'No se pudieron eliminar las categorías.',
+  );
 
   const { error } = await supabase
     .from('menus')
     .delete()
     .eq('id', menuId);
 
-  if (error) throw new Error(error.message);
+  throwIfSupabaseError(error, 'No se pudo eliminar el menú.');
 }
 
 /**
@@ -257,7 +346,7 @@ export async function getMenusByVenue(venueId: string): Promise<Menu[]> {
     .eq('venue_id', venueId)
     .order('created_at', { ascending: false });
 
-  if (error) throw new Error(error.message);
+  throwIfSupabaseError(error, 'No se pudieron cargar los menús.');
   return (data || []) as Menu[];
 }
 
@@ -298,43 +387,29 @@ export async function getPublishedMenu(venueSlug: string): Promise<{
     .single();
 
   if (error || !venue) return null;
+  const typedVenue = venue as PublishedMenuRow;
 
   // Extract from nested structure
-  const menus = (venue as any).menus;
-  const menu = Array.isArray(menus) ? menus[0] : menus;
+  const menu = firstOrSingle(typedVenue.menus);
   if (!menu) return null;
 
-  const rawCategories = menu.menu_categories || [];
-
-  // Filter visible categories, sort, and attach sorted available items
-  const categoriesWithItems = rawCategories
-    .filter((cat: any) => cat.is_visible)
-    .sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
-    .map((cat: any) => ({
-      ...cat,
-      items: (cat.menu_items || [])
-        .filter((item: any) => item.is_available)
-        .sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0)),
-    }));
+  const parsedMenu = getParsedMenu(menu.parsed_json);
 
   return {
     venue: {
-      name: venue.name,
-      slug: venue.slug,
-      cuisine_type: venue.cuisine_type,
-      logo_url: venue.logo_url,
-      chat_persona: normalizeChatPersona((venue as any).chat_persona),
+      name: typedVenue.name,
+      slug: typedVenue.slug,
+      cuisine_type: typedVenue.cuisine_type,
+      logo_url: typedVenue.logo_url,
+      chat_persona: normalizeChatPersona(typedVenue.chat_persona),
     },
-    categories: categoriesWithItems as (MenuCategory & { items: MenuItem[] })[],
+    categories: normalizePublishedCategories(menu.menu_categories),
     visualStyle: normalizeMenuVisualStyle(
-      (menu.parsed_json as ParsedMenu | null | undefined)?.visual_style,
-      venue.cuisine_type,
+      parsedMenu?.visual_style,
+      typedVenue.cuisine_type,
     ),
-    additionalCharges:
-      (menu.parsed_json as ParsedMenu | null | undefined)?.additional_charges ||
-      [],
-    legalNotes:
-      (menu.parsed_json as ParsedMenu | null | undefined)?.legal_notes || [],
+    additionalCharges: parsedMenu?.additional_charges || [],
+    legalNotes: parsedMenu?.legal_notes || [],
   };
 }
 
@@ -342,23 +417,29 @@ export async function getPublishedMenu(venueSlug: string): Promise<{
  * Load an existing menu's data as a ParsedMenu shape (for editing in MenuReview).
  */
 export async function getMenuForEdit(menuId: string): Promise<ParsedMenu> {
-  const { data: menu } = await supabase
+  const { data: menu, error: menuError } = await supabase
     .from('menus')
     .select('parsed_json')
     .eq('id', menuId)
     .single();
 
-  const { data: categories } = await supabase
+  throwIfSupabaseError(menuError, 'No se pudo cargar el menú.');
+
+  const { data: categories, error: categoriesError } = await supabase
     .from('menu_categories')
     .select('*')
     .eq('menu_id', menuId)
     .order('sort_order');
 
-  const { data: items } = await supabase
+  throwIfSupabaseError(categoriesError, 'No se pudieron cargar las categorías.');
+
+  const { data: items, error: itemsError } = await supabase
     .from('menu_items')
     .select('*')
     .eq('menu_id', menuId)
     .order('sort_order');
+
+  throwIfSupabaseError(itemsError, 'No se pudieron cargar los ítems.');
 
   const storedParsed = menu?.parsed_json as ParsedMenu | null | undefined;
 

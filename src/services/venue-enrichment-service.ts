@@ -4,6 +4,11 @@ import { TABLIA_GEMINI_MODEL } from './gemini-config';
 
 const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY || '');
 
+type GenerativeModelOptions = Parameters<typeof genAI.getGenerativeModel>[0];
+const GOOGLE_SEARCH_TOOLS = [{ googleSearch: {} }] as unknown as NonNullable<
+  GenerativeModelOptions['tools']
+>;
+
 const ENRICHMENT_PROMPT = `Eres un asistente que busca información de contacto de restaurantes.
 
 Dado el nombre de un restaurante (y opcionalmente su dirección o ciudad), buscá en internet y devolvé la información de contacto que encuentres.
@@ -96,7 +101,7 @@ async function searchAndEnrich(
   const model = genAI.getGenerativeModel({
     model: TABLIA_GEMINI_MODEL,
     generationConfig: { responseMimeType: 'application/json' },
-    tools: [{ googleSearch: {} } as any],
+    tools: GOOGLE_SEARCH_TOOLS,
   });
 
   const addressHint = existing.address ? ` en ${existing.address}` : '';

@@ -1,8 +1,11 @@
 import { supabase } from '../lib/supabase';
 import type {
+  CampaignType,
   ConsentChannel,
   CustomerIdentityType,
   CustomerMemorySummary,
+  LoyaltyProgramType,
+  LoyaltyRewardStatus,
 } from '../types';
 export {
   getCustomerMemoryMessage,
@@ -60,39 +63,70 @@ function asNumber(value: unknown): number {
   return typeof value === 'number' && Number.isFinite(value) ? value : 0;
 }
 
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object'
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function asOneOf<T extends string>(
+  value: unknown,
+  allowed: readonly T[],
+  fallback: T,
+): T {
+  const text = asString(value);
+  return allowed.includes(text as T) ? (text as T) : fallback;
+}
+
 function normalizeMemorySummary(value: unknown): CustomerMemorySummary | null {
-  if (!value || typeof value !== 'object') return null;
-  const raw = value as Record<string, any>;
+  const raw = asRecord(value);
+  if (!raw) return null;
   if (raw.ok === false) return null;
 
-  const loyalty = raw.loyalty && typeof raw.loyalty === 'object'
+  const rawLoyalty = asRecord(raw.loyalty);
+  const rawReward = asRecord(raw.reward);
+  const rawCampaign = asRecord(raw.campaign);
+
+  const loyalty = rawLoyalty
     ? {
-        programId: asString(raw.loyalty.program_id),
-        name: asString(raw.loyalty.name),
-        type: raw.loyalty.type || 'stamps',
-        visitCount: asNumber(raw.loyalty.visit_count),
-        visitsRequired: asNumber(raw.loyalty.visits_required),
-        visitsUntilReward: asNumber(raw.loyalty.visits_until_reward),
-        rewardLabel: asString(raw.loyalty.reward_label),
+        programId: asString(rawLoyalty.program_id),
+        name: asString(rawLoyalty.name),
+        type: asOneOf<LoyaltyProgramType>(
+          rawLoyalty.type,
+          ['stamps', 'points', 'visits'],
+          'stamps',
+        ),
+        visitCount: asNumber(rawLoyalty.visit_count),
+        visitsRequired: asNumber(rawLoyalty.visits_required),
+        visitsUntilReward: asNumber(rawLoyalty.visits_until_reward),
+        rewardLabel: asString(rawLoyalty.reward_label),
       }
     : undefined;
 
-  const reward = raw.reward && typeof raw.reward === 'object'
-    ? {
-        id: asString(raw.reward.id),
-        rewardLabel: asString(raw.reward.reward_label),
-        status: raw.reward.status || 'earned',
+  const reward = rawReward
+      ? {
+        id: asString(rawReward.id),
+        rewardLabel: asString(rawReward.reward_label),
+        status: asOneOf<LoyaltyRewardStatus>(
+          rawReward.status,
+          ['earned', 'redeemed', 'expired'],
+          'earned',
+        ),
       }
     : undefined;
 
-  const campaign = raw.campaign && typeof raw.campaign === 'object'
-    ? {
-        id: asString(raw.campaign.id),
-        type: raw.campaign.type || 'flash_promo',
-        title: asString(raw.campaign.title),
-        body: asString(raw.campaign.body),
-        ctaLabel: asString(raw.campaign.cta_label) || undefined,
-        ctaUrl: asString(raw.campaign.cta_url) || undefined,
+  const campaign = rawCampaign
+      ? {
+        id: asString(rawCampaign.id),
+        type: asOneOf<CampaignType>(
+          rawCampaign.type,
+          ['flash_promo', 'announcement', 'event'],
+          'flash_promo',
+        ),
+        title: asString(rawCampaign.title),
+        body: asString(rawCampaign.body),
+        ctaLabel: asString(rawCampaign.cta_label) || undefined,
+        ctaUrl: asString(rawCampaign.cta_url) || undefined,
       }
     : undefined;
 

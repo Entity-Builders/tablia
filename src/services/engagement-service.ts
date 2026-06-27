@@ -25,13 +25,20 @@ function clampVisitsRequired(value: number): number {
   return Math.max(1, Math.min(Math.round(value), 30));
 }
 
-function normalizeLoyaltyProgram(value: any): LoyaltyProgram | undefined {
-  if (!value) return undefined;
-  const rules =
-    value.rules && typeof value.rules === 'object' ? value.rules : {};
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object'
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function normalizeLoyaltyProgram(value: unknown): LoyaltyProgram | undefined {
+  const record = asRecord(value);
+  if (!record) return undefined;
+
+  const rules = asRecord(record.rules) ?? {};
 
   return {
-    ...value,
+    ...(record as unknown as LoyaltyProgram),
     rules: {
       ...rules,
       visits_required: clampVisitsRequired(Number(rules.visits_required ?? 5)),
@@ -43,14 +50,13 @@ function normalizeLoyaltyProgram(value: any): LoyaltyProgram | undefined {
   } as LoyaltyProgram;
 }
 
-function normalizeCampaign(value: any): VenueCampaign | undefined {
-  if (!value) return undefined;
+function normalizeCampaign(value: unknown): VenueCampaign | undefined {
+  const record = asRecord(value);
+  if (!record) return undefined;
+
   return {
-    ...value,
-    segment:
-      value.segment && typeof value.segment === 'object'
-        ? value.segment
-        : {},
+    ...(record as unknown as VenueCampaign),
+    segment: asRecord(record.segment) ?? {},
   } as VenueCampaign;
 }
 

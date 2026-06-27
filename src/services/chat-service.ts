@@ -1,7 +1,9 @@
 import type { ChatMessage, ChatPersona, ChatSession } from '../types';
+import type { GoogleGenerativeAI as GoogleGenerativeAIClient } from '@google/generative-ai';
 import { analytics } from './analytics';
 import { getChatPersonaPrompt } from './chat-persona';
 import { TABLIA_GEMINI_MODEL } from './gemini-config';
+import { throwIfSupabaseError } from './supabase-errors';
 
 /**
  * Fetch all chat sessions for a venue, ordered by most recent.
@@ -16,7 +18,7 @@ export async function getChatSessions(venueId: string): Promise<ChatSession[]> {
     .order('created_at', { ascending: false })
     .limit(20);
 
-  if (error) throw new Error(error.message);
+  throwIfSupabaseError(error, 'No se pudieron cargar las conversaciones.');
   return (data || []) as ChatSession[];
 }
 
@@ -35,27 +37,34 @@ export async function saveChatSession(
 
   if (sessionId) {
     // Update existing session
-    await supabase
+    const { error } = await supabase
       .from('chat_sessions')
       .update({ messages, updated_at: new Date().toISOString() })
       .eq('id', sessionId);
+    throwIfSupabaseError(error, 'No se pudo guardar la conversación.');
     return sessionId;
   }
 
   // Create new session
   const { data, error } = await supabase
     .from('chat_sessions')
-    .insert({ menu_id: menuId, venue_id: venueId, messages, customer_email: customerEmail || null })
+    .insert({
+      menu_id: menuId,
+      venue_id: venueId,
+      messages,
+      customer_email: customerEmail || null,
+    })
     .select('id')
     .single();
 
-  if (error) throw new Error(error.message);
+  throwIfSupabaseError(error, 'No se pudo crear la conversación.');
+  if (!data) throw new Error('No se pudo crear la conversación.');
   return data.id;
 }
 
 // Lazy-load Gemini SDK — only downloaded when user actually sends a chat message
-let genAI: any = null;
-async function getGenAI() {
+let genAI: GoogleGenerativeAIClient | null = null;
+async function getGenAI(): Promise<GoogleGenerativeAIClient> {
   if (!genAI) {
     const { GoogleGenerativeAI } = await import('@google/generative-ai');
     genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY || '');

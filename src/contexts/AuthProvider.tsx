@@ -30,7 +30,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) {
+        analytics.captureError(new Error('auth_session_load_failed'), {
+          screen: 'auth_provider',
+          action: 'get_session',
+        });
+      }
+
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -62,7 +69,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      analytics.captureError(new Error('auth_sign_out_failed'), {
+        screen: 'auth_provider',
+        action: 'sign_out',
+      });
+      throw new Error('No se pudo cerrar sesión. Intentá de nuevo.');
+    }
   };
 
   return (

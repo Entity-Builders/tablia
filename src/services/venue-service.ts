@@ -1,6 +1,15 @@
 import { supabase } from '../lib/supabase';
 import type { ChatPersona, LandingLink, Venue } from '../types';
 import { normalizeChatPersona } from './chat-persona';
+import { throwIfSupabaseError } from './supabase-errors';
+
+type VenueLandingRow = {
+  name: string;
+  slug: string;
+  logo_url: string | null;
+  cuisine_type: string | null;
+  landing_links?: LandingLink[] | null;
+};
 
 /**
  * Create a new venue for the current user.
@@ -17,9 +26,10 @@ export async function createVenue(data: {
   if (!user) throw new Error('No estás autenticado');
 
   // Ensure profile exists
-  await supabase
+  const { error: profileError } = await supabase
     .from('profiles')
     .upsert({ id: user.id }, { onConflict: 'id' });
+  throwIfSupabaseError(profileError, 'No se pudo preparar tu perfil.');
 
   const { data: venue, error } = await supabase
     .from('venues')
@@ -40,6 +50,8 @@ export async function createVenue(data: {
     throw new Error(error.message);
   }
 
+  if (!venue) throw new Error('No se pudo crear el establecimiento.');
+
   return venue as Venue;
 }
 
@@ -58,7 +70,7 @@ export async function getMyVenues(): Promise<Venue[]> {
     .eq('owner_id', user.id)
     .order('created_at', { ascending: false });
 
-  if (error) throw new Error(error.message);
+  throwIfSupabaseError(error, 'No se pudieron cargar tus establecimientos.');
   return (data || []) as Venue[];
 }
 
@@ -94,9 +106,15 @@ export async function getVenueLanding(slug: string): Promise<{
     .single();
 
   if (error) return null;
+  const landing = data as VenueLandingRow | null;
+  if (!landing) return null;
+
   return {
-    ...(data as any),
-    landing_links: (data as any).landing_links ?? [],
+    name: landing.name,
+    slug: landing.slug,
+    logo_url: landing.logo_url,
+    cuisine_type: landing.cuisine_type,
+    landing_links: landing.landing_links ?? [],
   };
 }
 
@@ -115,7 +133,7 @@ export async function updateVenueLandingLinks(
     })
     .eq('id', venueId);
 
-  if (error) throw new Error(error.message);
+  throwIfSupabaseError(error, 'No se pudieron guardar los links.');
 }
 
 /**
@@ -135,6 +153,6 @@ export async function updateVenueChatPersona(
     })
     .eq('id', venueId);
 
-  if (error) throw new Error(error.message);
+  throwIfSupabaseError(error, 'No se pudo guardar el locutor.');
   return chatPersona;
 }
