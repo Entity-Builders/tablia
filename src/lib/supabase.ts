@@ -2,7 +2,7 @@ import {
   supabase,
   supabaseAnonKey,
   supabaseUrl,
-} from '@eb-packages/logic/src/supabase';
+} from '@entity-builders/logic/src/supabase';
 
 export { supabase };
 

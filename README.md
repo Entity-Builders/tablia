@@ -29,7 +29,7 @@ owner.
 - Database: canonical schema is `tablia`, with unprefixed tables such as
   `venues`, `menus`, `menu_categories`, `menu_items`, and `chat_sessions`
 - AI: Gemini for menu parsing, contact enrichment, and menu chat
-- Analytics: shared `@eb-packages/analytics` PostHog wrapper
+- Analytics: shared `@entity-builders/analytics` PostHog wrapper
 - Hosting target: Cloudflare via `wrangler`
 
 ## Local Development

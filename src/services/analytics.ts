@@ -1,10 +1,10 @@
 /**
  * App-specific analytics instance for Tablia.
- * Uses the shared @eb-packages/analytics package.
+ * Uses the shared @entity-builders/analytics package.
  * Same Entity Builders PostHog project as the other online apps,
  * differentiated by `app: 'tablia'`.
  */
-import { Analytics, PostHogProvider } from '@eb-packages/analytics';
+import { Analytics, PostHogProvider } from '@entity-builders/analytics';
 
 const POSTHOG_KEY = import.meta.env.VITE_POSTHOG_KEY || '';
 const POSTHOG_HOST =

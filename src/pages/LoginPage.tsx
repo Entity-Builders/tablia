@@ -3,8 +3,8 @@ import { useAuth } from '../contexts/AuthProvider';
 import {
   useSupabaseAccountAccess,
   type SupabaseAuthAccessClient,
-} from '@eb-packages/auth';
-import { AccountAccessPanel } from '@eb-packages/auth-ui-web';
+} from '@entity-builders/auth';
+import { AccountAccessPanel } from '@entity-builders/auth-ui-web';
 import { useEffect } from 'react';
 import { UtensilsCrossed } from 'lucide-react';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';

@@ -19,12 +19,12 @@
     "db:push": "cd ../../eb-infra && npx supabase link --project-ref xfcvuzcxvdpzkqpnahyx && npx supabase db push"
   },
   "dependencies": {
-    "@eb-packages/analytics": "1.0.0",
-    "@eb-packages/app-registry": "workspace:*",
-    "@eb-packages/auth": "workspace:*",
-    "@eb-packages/auth-ui-web": "workspace:*",
-    "@eb-packages/logic": "workspace:*",
-    "@eb-packages/ui-web": "workspace:*",
+    "@entity-builders/analytics": "1.0.0",
+    "@entity-builders/app-registry": "workspace:*",
+    "@entity-builders/auth": "workspace:*",
+    "@entity-builders/auth-ui-web": "workspace:*",
+    "@entity-builders/logic": "workspace:*",
+    "@entity-builders/ui-web": "workspace:*",
     "@google/generative-ai": "^0.24.1",
     "@supabase/supabase-js": "^2.97.0",
     "lucide-react": "^0.564.0",
